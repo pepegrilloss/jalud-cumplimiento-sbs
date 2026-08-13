@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'apis_net_pe' => [
+        'url' => env('APIS_NET_PE_URL', 'https://api.apis.net.pe/v1/dni'),
+        'referer' => env('APIS_NET_PE_REFERER', 'https://apis.net.pe/consulta-dni-api'),
+        'token' => env('APIS_NET_PE_TOKEN'),
+    ],
+
+    'geografia' => [
+        'paises_url' => env('GEOGRAFIA_PAISES_URL', 'https://raw.githubusercontent.com/umpirsky/country-list/master/data/es/country.json'),
+        'ubigeos_url' => env('GEOGRAFIA_UBIGEOS_URL', 'https://free.e-api.net.pe/ubigeos.json'),
+    ],
+
 ];

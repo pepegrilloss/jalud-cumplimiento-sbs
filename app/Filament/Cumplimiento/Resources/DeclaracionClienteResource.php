@@ -5,6 +5,7 @@ namespace App\Filament\Cumplimiento\Resources;
 use App\Enums\Declaraciones\EstadoCivil;
 use App\Enums\Declaraciones\EstadoDeclaracion;
 use App\Enums\Declaraciones\TipoDocumentoIdentidad;
+use App\Filament\Forms\CamposGeograficos;
 use App\Filament\Cumplimiento\Resources\DeclaracionClienteResource\Pages;
 use App\Models\Cliente;
 use App\Models\DeclaracionCliente;
@@ -85,13 +86,13 @@ class DeclaracionClienteResource extends Resource
                 Forms\Components\Select::make('TipoDocumento')->label('Tipo de documento')->options(TipoDocumentoIdentidad::opciones())->default('DNI')->required()->live()->afterStateUpdated(fn($state,Forms\Set $set)=>$state!=='OTRO'?$set('TipoDocumentoOtro',null):null),
                 Forms\Components\TextInput::make('TipoDocumentoOtro')->label('Especifique tipo de documento')->required(fn(Forms\Get $get)=>$get('TipoDocumento')==='OTRO')->visible(fn(Forms\Get $get)=>$get('TipoDocumento')==='OTRO')->dehydratedWhenHidden(false),
                 Forms\Components\TextInput::make('NumeroDocumento')->label('Número de documento')->required()->rules(fn(Forms\Get $get)=>[new \App\Rules\DocumentoIdentidadValido($get('TipoDocumento'))]),
-                Forms\Components\TextInput::make('Nacionalidad'), Forms\Components\Select::make('EstadoCivil')->label('Estado civil')->options(collect(EstadoCivil::opciones())->except('CONVIVIENTE')->all())->required()->live()->afterStateUpdated(fn($state,Forms\Set $set)=>$state!=='CASADO'?$set('ConyugeConviviente',null):null),
+                CamposGeograficos::pais('Nacionalidad', 'País de nacionalidad'), Forms\Components\Select::make('EstadoCivil')->label('Estado civil')->options(collect(EstadoCivil::opciones())->except('CONVIVIENTE')->all())->required()->live()->afterStateUpdated(fn($state,Forms\Set $set)=>$state!=='CASADO'?$set('ConyugeConviviente',null):null),
                 Forms\Components\TextInput::make('ConyugeConviviente')->label('Cónyuge')->required(fn(Forms\Get $get)=>$get('EstadoCivil')==='CASADO')->visible(fn(Forms\Get $get)=>$get('EstadoCivil')==='CASADO')->dehydratedWhenHidden(false),
             ])->columns(3),
             Forms\Components\Section::make('Domicilio')->schema([
                 Forms\Components\TextInput::make('DomicilioVia')->label('Jr. / Av. / Calle / Pasaje / Óvalo')->required()->columnSpan(2), Forms\Components\TextInput::make('DomicilioNumero')->label('N.º'),
                 Forms\Components\TextInput::make('DomicilioInterior')->label('Dpto.-Int. N.º'), Forms\Components\TextInput::make('DomicilioZona')->label('Urb. / Complejo / Zona / Sector')->columnSpan(2),
-                Forms\Components\TextInput::make('DomicilioDistrito')->label('Distrito')->required(), Forms\Components\TextInput::make('DomicilioProvincia')->label('Provincia')->required(), Forms\Components\TextInput::make('DomicilioDepartamento')->label('Departamento')->required(),
+                ...CamposGeograficos::domicilio('DomicilioDepartamento', 'DomicilioProvincia', 'DomicilioDistrito'),
             ])->columns(4),
             Forms\Components\Section::make('Contacto y relación')->schema([
                 Forms\Components\TextInput::make('Ocupacion')->label('Ocupación')->required(), Forms\Components\TextInput::make('TelefonoFijo')->label('Teléfono fijo')->tel(),

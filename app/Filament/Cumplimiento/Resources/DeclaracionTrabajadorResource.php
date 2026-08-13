@@ -6,11 +6,15 @@ use App\Enums\Declaraciones\CodigoOcupacion;
 use App\Enums\Declaraciones\EstadoCivil;
 use App\Enums\Declaraciones\EstadoDeclaracion;
 use App\Enums\Declaraciones\TipoDocumentoIdentidad;
+use App\Exceptions\ConsultaDniPeruException;
+use App\Filament\Forms\CamposGeograficos;
 use App\Filament\Cumplimiento\Resources\DeclaracionTrabajadorResource\Pages;
 use App\Models\DeclaracionTrabajador;
 use App\Models\Trabajador;
+use App\Services\Declaraciones\ConsultaDniPeruService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -102,8 +106,41 @@ class DeclaracionTrabajadorResource extends Resource
                     ->preload()
                     ->required()->live()->disabledOn('edit')
                     ->createOptionForm([
-                        Forms\Components\Select::make('TipoDocumento')->options(TipoDocumentoIdentidad::opciones())->required(),
-                        Forms\Components\TextInput::make('NumeroDocumento')->required()->maxLength(30),
+                        Forms\Components\Select::make('TipoDocumento')->options(TipoDocumentoIdentidad::opciones())->default('DNI')->required()->live(),
+                        Forms\Components\TextInput::make('NumeroDocumento')->label('Número de documento')->required()->maxLength(30)
+                            ->rules(fn (Forms\Get $get): array => $get('TipoDocumento') === 'DNI' ? ['digits:8'] : [])
+                            ->suffixAction(
+                                Forms\Components\Actions\Action::make('consultarDni')
+                                    ->label('Consultar DNI')
+                                    ->tooltip('Buscar nombres y apellidos por DNI')
+                                    ->icon('heroicon-m-magnifying-glass')
+                                    ->visible(fn (Forms\Get $get): bool => $get('TipoDocumento') === 'DNI')
+                                    ->action(function (Forms\Get $get, Forms\Set $set): void {
+                                        $dni = trim((string) $get('NumeroDocumento'));
+
+                                        if (preg_match('/^\d{8}$/', $dni) !== 1) {
+                                            Notification::make()->danger()->title('DNI inválido')->body('Ingrese los 8 dígitos antes de consultar.')->send();
+                                            return;
+                                        }
+
+                                        try {
+                                            $persona = app(ConsultaDniPeruService::class)->consultar($dni);
+                                        } catch (ConsultaDniPeruException $exception) {
+                                            Notification::make()->danger()->title('No se pudo consultar el DNI')->body($exception->getMessage())->send();
+                                            return;
+                                        }
+
+                                        if (! $persona) {
+                                            Notification::make()->warning()->title('DNI no encontrado')->body('No fue posible obtener los datos. Puede completar los nombres manualmente.')->send();
+                                            return;
+                                        }
+
+                                        $set('Nombres', $persona['nombres']);
+                                        $set('ApellidoPaterno', $persona['apellidoPaterno']);
+                                        $set('ApellidoMaterno', $persona['apellidoMaterno']);
+                                        Notification::make()->success()->title('Datos encontrados')->body('Se cargaron los nombres y apellidos del trabajador.')->send();
+                                    }),
+                            ),
                         Forms\Components\TextInput::make('Nombres')->required()->maxLength(150),
                         Forms\Components\TextInput::make('ApellidoPaterno')->required()->maxLength(100),
                         Forms\Components\TextInput::make('ApellidoMaterno')->maxLength(100),
@@ -131,8 +168,8 @@ class DeclaracionTrabajadorResource extends Resource
                 Forms\Components\Select::make('TipoDocumento')->label('Tipo de documento')->options(TipoDocumentoIdentidad::opciones())->required()->live()->afterStateUpdated(fn($state,Forms\Set $set)=>$state!=='OTRO'?$set('TipoDocumentoOtro',null):null),
                 Forms\Components\TextInput::make('TipoDocumentoOtro')->label('Especifique tipo de documento')->required(fn(Forms\Get $get)=>$get('TipoDocumento')==='OTRO')->visible(fn(Forms\Get $get)=>$get('TipoDocumento')==='OTRO')->dehydratedWhenHidden(false),
                 Forms\Components\TextInput::make('NumeroDocumento')->label('Número de documento')->required()->maxLength(30)->rules(fn (Forms\Get $get) => [new \App\Rules\DocumentoIdentidadValido($get('TipoDocumento'))]),
-                Forms\Components\TextInput::make('Nacionalidad')->maxLength(100),
-                Forms\Components\TextInput::make('Pais')->label('País, cuando corresponda')->maxLength(100),
+                CamposGeograficos::pais('Nacionalidad', 'País de nacionalidad'),
+                CamposGeograficos::pais('Pais', 'País, cuando corresponda'),
                 Forms\Components\TextInput::make('LugarNacimiento')->label('Lugar de nacimiento')->maxLength(180),
                 Forms\Components\DatePicker::make('FechaNacimiento')->label('Fecha de nacimiento')->maxDate(now()),
                 Forms\Components\Select::make('EstadoCivil')->label('Estado civil')->options(EstadoCivil::opciones())->required()->live()->afterStateUpdated(function($state,Forms\Set $set){if(!in_array($state,['CASADO','CONVIVIENTE'],true)){$set('ConyugeNombres',null);$set('ConyugeApellidos',null);}}),
@@ -156,9 +193,7 @@ class DeclaracionTrabajadorResource extends Resource
             Forms\Components\TextInput::make('DomicilioNumero')->label('Número'),
             Forms\Components\TextInput::make('DomicilioInterior')->label('Dpto. / Interior'),
             Forms\Components\TextInput::make('DomicilioZona')->label('Urb. / Complejo / Zona / Sector')->columnSpan(2),
-            Forms\Components\TextInput::make('DomicilioDistrito')->label('Distrito')->required(),
-            Forms\Components\TextInput::make('DomicilioProvincia')->label('Provincia')->required(),
-            Forms\Components\TextInput::make('DomicilioDepartamento')->label('Departamento')->required(),
+            ...CamposGeograficos::domicilio('DomicilioDepartamento', 'DomicilioProvincia', 'DomicilioDistrito'),
         ];
     }
 
@@ -169,7 +204,7 @@ class DeclaracionTrabajadorResource extends Resource
                 Forms\Components\Select::make('Nivel')->options(['DOCTORADO'=>'Doctorado','MAESTRIA'=>'Maestría','DIPLOMADO'=>'Diplomado o Especialización','LICENCIATURA'=>'Licenciatura o Título Profesional','BACHILLERATO'=>'Bachillerato','TECNICO'=>'Estudios Técnicos'])->required(),
                 Forms\Components\TextInput::make('TituloGrado')->label('Título o grado'), Forms\Components\TextInput::make('Especialidad'),
                 Forms\Components\TextInput::make('CentroEstudios')->label('Universidad / Instituto / Centro'),
-                Forms\Components\TextInput::make('Ciudad'), Forms\Components\TextInput::make('Pais')->label('País'),
+                Forms\Components\TextInput::make('Ciudad'), CamposGeograficos::pais('Pais'),
                 Forms\Components\DatePicker::make('FechaExpedicion')->label('Fecha de expedición'),
                 Forms\Components\Select::make('EstadoEstudio')->label('Estado')->options(['TITULADO'=>'Titulado','EN_TRAMITE'=>'Título en trámite','EGRESADO'=>'Egresado','ESTUDIANDO'=>'Actualmente estudiando'])->live(),
                 Forms\Components\TextInput::make('CicloActual')->label('Ciclo actual')->numeric()->visible(fn (Forms\Get $get) => $get('EstadoEstudio') === 'ESTUDIANDO'),
@@ -178,7 +213,7 @@ class DeclaracionTrabajadorResource extends Resource
                 Forms\Components\Select::make('Nivel')->options(['PRIMARIA'=>'Primaria','SECUNDARIA'=>'Secundaria'])->required(),
                 Forms\Components\Toggle::make('Concluida')->label('Concluida')->live(),
                 Forms\Components\TextInput::make('UltimoGrado')->label('Último grado/año')->visible(fn (Forms\Get $get) => ! $get('Concluida')),
-                Forms\Components\TextInput::make('Colegio'), Forms\Components\TextInput::make('Ciudad'), Forms\Components\TextInput::make('Pais')->label('País'),
+                Forms\Components\TextInput::make('Colegio'), Forms\Components\TextInput::make('Ciudad'), CamposGeograficos::pais('Pais'),
                 Forms\Components\TextInput::make('AnioInicio')->label('Año inicio')->numeric()->minValue(1900)->maxValue((int) date('Y')),
                 Forms\Components\TextInput::make('AnioTermino')->label('Año término')->numeric()->minValue(1900)->maxValue((int) date('Y')),
             ])->columns(4)->maxItems(2)->addActionLabel('Agregar nivel escolar')->orderColumn('Orden')->defaultItems(0),
