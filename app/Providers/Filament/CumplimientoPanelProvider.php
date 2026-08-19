@@ -13,6 +13,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Assets\Css;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -36,6 +37,10 @@ class CumplimientoPanelProvider extends PanelProvider
             ->maxContentWidth('full')
             ->colors(['primary' => '#9fcb36'])
             ->assets([Css::make('custom-login-css', asset('css/login-custom.css'))])
+            ->renderHook(
+                PanelsRenderHook::HEAD_START,
+                fn(): string => '<link rel="stylesheet" href="' . asset('css/login-custom.css') . '?v=' . filemtime(public_path('css/login-custom.css')) . '">'
+            )
             ->navigationGroups(['Declaraciones juradas', 'Cumplimiento'])
             ->resources([DeclaracionTrabajadorResource::class, DeclaracionClienteResource::class, RosCasoResource::class])
             ->databaseTransactions()
