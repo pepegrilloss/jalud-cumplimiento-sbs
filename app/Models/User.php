@@ -2,54 +2,105 @@
 
 namespace App\Models;
 
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Panel;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Permission\Traits\HasRoles;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 
 class User extends Authenticatable implements FilamentUser
 {
-    use Notifiable, HasRoles;
+    use HasFactory, Notifiable;
 
-    protected $table = 'users';
+    protected $table = 'MP_LGN_USUARIO';
+    protected $primaryKey = 'ID_MP_LGN_USUARIO';
+    public $incrementing = true;
+    protected $keyType = 'int';
+    public $timestamps = false;
 
-    protected $fillable = ['name', 'email', 'password', 'username', 'SedeID'];
+    protected $fillable = [
+        'ID_MP_LGN_USUARIO',
+        'name',
+        'email',
+        'password',
+    ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'ID_MP_LGN_USUARIO' => 'integer',
         ];
     }
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $panel->getId() === 'cumplimiento' && $this->puedeAccederACumplimientoSbs();
+        if (!$this->hasValidProfile()) {
+            return false;
+        }
+
+        // El panel es exclusivamente administrativo: TI y Comercial.
+        if (!in_array((int) $this->ID_MP_LGN_AREA, [1, 12], true)) {
+            return false;
+        }
+
+        $activeStates = config('security.access.active_profile_states', []);
+
+        if ($activeStates === []) {
+            return true;
+        }
+
+        return in_array((string) $this->ID_MP_LGN_ESTADO, $activeStates, true);
     }
 
-    public function sede()
+    private function hasValidProfile(): bool
     {
-        return $this->belongsTo(Sede::class, 'SedeID', 'SedeID');
+        return filled($this->ID_MP_LGN_USUARIOS_REGISTRADOS ?? null)
+            && filled($this->ID_MP_LGN_AREA ?? null)
+            && filled($this->ID_MP_LGN_ROL ?? null)
+            && filled($this->ID_MP_LGN_ESTADO ?? null);
     }
 
-    public function puedeAccederACumplimientoSbs(): bool
+    public function getAuthIdentifierName()
     {
-        return $this->hasPermissionTo('acceder_cumplimiento_sbs')
-            || $this->hasRole('super_admin');
+        return 'ID_MP_LGN_USUARIO';
     }
 
-    public function getEffectiveSedeId(): ?int
+    public function getAuthIdentifier()
     {
-        return $this->SedeID ? (int) $this->SedeID : null;
+        return $this->getAttribute('ID_MP_LGN_USUARIO');
     }
 
-    public function isPrivileged(): bool
+    public function getAuthPassword()
     {
-        return $this->hasAnyPermission(['ver_todas_las_sedes', 'ver_todos_los_casos_sbs'])
-            || $this->hasRole('super_admin');
+        return $this->password;
+    }
+
+    public function getAttribute($key)
+    {
+        if ($key === 'id') {
+            return parent::getAttribute('ID_MP_LGN_USUARIO');
+        }
+
+        return parent::getAttribute($key);
+    }
+
+    public function setAttribute($key, $value)
+    {
+        if ($key === 'id') {
+            $key = 'ID_MP_LGN_USUARIO';
+        }
+
+        return parent::setAttribute($key, $value);
+    }
+
+    public function getKey()
+    {
+        return $this->getAttribute($this->getKeyName());
     }
 }

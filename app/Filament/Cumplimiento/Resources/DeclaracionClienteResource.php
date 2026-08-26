@@ -188,9 +188,7 @@ class DeclaracionClienteResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => self::soloUltimaVersion($query)
-                ->with(['cliente' => fn (Builder $clientes): Builder => $clientes->withoutGlobalScopes()])
-                ->withCount('versiones'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => self::prepararListado($query))
             ->defaultSort('created_at', 'desc')->columns([
                 Tables\Columns\TextColumn::make('NombreCompleto')->label('Cliente')->searchable(['Nombres', 'Apellidos']), Tables\Columns\TextColumn::make('NumeroDocumento')->label('Documento')->searchable(),
                 Tables\Columns\TextColumn::make('versiones_count')->label('Versiones')->badge(), Tables\Columns\TextColumn::make('FechaDeclaracion')->label('Fecha')->date('d/m/Y'),
@@ -209,6 +207,13 @@ class DeclaracionClienteResource extends Resource
                 ->selectRaw('MAX(DeclaracionClienteID)')
                 ->groupBy('ClienteID'),
         );
+    }
+
+    public static function prepararListado(Builder $query): Builder
+    {
+        return self::soloUltimaVersion($query)
+            ->with(['cliente' => fn ($clientes) => $clientes->withoutGlobalScopes()])
+            ->withCount('versiones');
     }
 
     public static function getRelations(): array

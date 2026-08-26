@@ -104,12 +104,14 @@ class DeclaracionesListadoAgrupadoTest extends TestCase
             $this->declaracionTrabajador(3, 2, 1, 'Luis', '22222222'),
         ]);
 
-        $registros = DeclaracionTrabajadorResource::soloUltimaVersion(
+        $registros = DeclaracionTrabajadorResource::prepararListado(
             DeclaracionTrabajador::withoutGlobalScope('sede'),
         )->orderBy('TrabajadorID')->get();
 
         self::assertCount(2, $registros);
         self::assertSame([2, 1], $registros->pluck('NumeroVersion')->all());
+        self::assertSame('Ana Pérez', $registros->first()->trabajador->NombreCompleto);
+        self::assertSame(2, $registros->first()->versiones_count);
         self::assertCount(2, $registros->first()->versiones);
     }
 
@@ -126,12 +128,14 @@ class DeclaracionesListadoAgrupadoTest extends TestCase
             $this->declaracionCliente(3, 20, 1, 'Rosa', '22222222'),
         ]);
 
-        $registros = DeclaracionClienteResource::soloUltimaVersion(
+        $registros = DeclaracionClienteResource::prepararListado(
             DeclaracionCliente::withoutGlobalScope('sede'),
         )->orderBy('ClienteID')->get();
 
         self::assertCount(2, $registros);
         self::assertSame([2, 1], $registros->pluck('NumeroVersion')->all());
+        self::assertTrue((bool) $registros->first()->cliente->Activo);
+        self::assertSame(2, $registros->first()->versiones_count);
         self::assertCount(2, $registros->first()->versiones);
     }
 

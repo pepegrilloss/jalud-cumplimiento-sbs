@@ -1,50 +1,59 @@
-# Jalud Cumplimiento SBS
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-Aplicacion independiente del panel de Cumplimiento SBS de Jalud.
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
-## Alcance
+## About Laravel
 
-- Usa la misma base de datos de Jalud principal.
-- Usa la misma tabla `users`, roles y permisos SBS.
-- Usa las tablas `ros_*` existentes.
-- Expone unicamente el panel Filament `/cumplimiento`.
-- No contiene pantallas de creditos, pagos, tesoreria ni operaciones de sedes.
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-## Sesion compartida
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-En produccion, ambos proyectos deben tener el mismo `APP_KEY`, `SESSION_COOKIE`, `SESSION_DRIVER=database` y la misma tabla `sessions`. Si estan en subdominios, usar por ejemplo `SESSION_DOMAIN=.jalud.com.pe`.
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-Nunca cambiar `APP_KEY` en uno solo de los proyectos.
+## Learning Laravel
 
-## Despliegue
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
 
-```bash
-composer install --no-dev --optimize-autoloader
-php artisan migrate --force
-php artisan optimize:clear
-php artisan permission:cache-reset
-```
+If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-El proyecto tiene su propia tabla de control de migraciones (`migrations_cumplimiento`). Sus migraciones ROS son idempotentes y no recrean tablas existentes.
+## Laravel Sponsors
 
-## URL local
+We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
-```text
-http://localhost:84/cumplimiento/login
-```
+### Premium Partners
 
-## Declaraciones juradas
+- **[Vehikl](https://vehikl.com)**
+- **[Tighten Co.](https://tighten.co)**
+- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
+- **[64 Robots](https://64robots.com)**
+- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
+- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
+- **[Redberry](https://redberry.international/laravel-development)**
+- **[Active Logic](https://activelogic.com)**
 
-El panel incorpora dos recursos independientes:
+## Contributing
 
-- `/cumplimiento/declaraciones-trabajadores`: declaración del trabajador, antecedentes laborales e información patrimonial.
-- `/cumplimiento/declaraciones-clientes`: conocimiento del cliente bajo el régimen general, incluyendo PEP y beneficiario de la operación.
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-Las declaraciones se guardan inicialmente como borrador. Al finalizarse quedan bloqueadas; cualquier corrección genera una nueva versión vinculada con la anterior. Los PDF se almacenan en el disco privado `local`, con hash y metadatos en `dj_documentos`, y solo pueden verse o descargarse mediante rutas autenticadas y autorizadas.
+## Code of Conduct
 
-Para registrar los permisos del módulo:
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
 
-```bash
-php artisan db:seed --class=CumplimientoSbsPermisosSeeder --force
-php artisan permission:cache-reset
-```
+## Security Vulnerabilities
+
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+
+## License
+
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

@@ -323,9 +323,7 @@ class DeclaracionTrabajadorResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => self::soloUltimaVersion($query)
-                ->with(['trabajador' => fn (Builder $trabajadores): Builder => $trabajadores->withoutGlobalScopes()])
-                ->withCount('versiones'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => self::prepararListado($query))
             ->defaultSort('created_at', 'desc')->columns([
                 Tables\Columns\TextColumn::make('NombreCompleto')->label('Trabajador')->searchable(['Nombres', 'ApellidoPaterno', 'ApellidoMaterno']),
                 Tables\Columns\TextColumn::make('NumeroDocumento')->label('Documento')->searchable(),
@@ -371,6 +369,13 @@ class DeclaracionTrabajadorResource extends Resource
                 ->selectRaw('MAX(DeclaracionTrabajadorID)')
                 ->groupBy('TrabajadorID'),
         );
+    }
+
+    public static function prepararListado(Builder $query): Builder
+    {
+        return self::soloUltimaVersion($query)
+            ->with(['trabajador' => fn ($trabajadores) => $trabajadores->withoutGlobalScopes()])
+            ->withCount('versiones');
     }
 
     public static function getRelations(): array
