@@ -2,84 +2,94 @@
 
 namespace App\Filament\Pages\Auth;
 
-use App\Support\MlpVisitasHome;
-use Filament\Facades\Filament;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
+use Filament\Forms\Form;
 use Filament\Pages\Auth\Login as BaseLogin;
-use Illuminate\Contracts\Support\Htmlable;
+use Filament\Http\Responses\Auth\Contracts\LoginResponse;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\RateLimiter;
 
 class Login extends BaseLogin
 {
-    protected static string $layout = 'layouts.login';
+    protected static string $view = 'filament.pages.auth.login';
 
-    protected static string $view = 'filament.pages.auth.custom-login';
-
-    public function mount(): void
+    public function form(Form $form): Form
     {
-        if (Filament::auth()->check()) {
-            redirect()->to(MlpVisitasHome::url());
-        }
-
-        if (request()->boolean('expired')) {
-            Notification::make()
-                ->title('Sesión expirada')
-                ->body('Por seguridad, vuelve a iniciar sesión para continuar.')
-                ->warning()
-                ->send();
-        }
-
-        $this->form->fill();
+        return $form
+            ->schema([
+                $this->getUsernameFormComponent(),
+                $this->getPasswordFormComponent(),
+                $this->getRememberFormComponent(),
+            ])
+            ->statePath('data');
     }
 
-    protected function getForms(): array
+    protected function getUsernameFormComponent(): Component
     {
-        return [
-            'form' => $this->form(
-                $this->makeForm()
-                    ->schema([
-                        $this->getLoginFormComponent(),
-                        $this->getPasswordFormComponent(),
-                        $this->getRememberFormComponent(),
-                    ])
-                    ->statePath('data'),
-            ),
-        ];
-    }
-
-    protected function getLoginFormComponent(): Component
-    {
-        return TextInput::make('email')
+        return TextInput::make('username')
             ->label('Usuario')
+            ->prefixIcon('heroicon-m-user')
+            ->placeholder('Ingrese su usuario')
             ->required()
             ->autocomplete()
             ->autofocus()
-            ->extraInputAttributes(['tabindex' => 1])
-            ->rules(['required', 'string']);
+            ->extraInputAttributes(['tabindex' => 1]);
+    }
+
+    protected function getPasswordFormComponent(): Component
+    {
+        return parent::getPasswordFormComponent()
+            ->label('Contraseña')
+            ->prefixIcon('heroicon-m-lock-closed')
+            ->placeholder('Ingrese su contraseña');
+    }
+
+    protected function getAuthenticateFormAction(): Action
+    {
+        return parent::getAuthenticateFormAction()
+            ->label('Iniciar sesión');
     }
 
     protected function getCredentialsFromFormData(array $data): array
     {
         return [
-            'email' => $data['email'],
+            'username' => $data['username'],
             'password' => $data['password'],
         ];
     }
 
-    public function getHeading(): string | Htmlable
+    public function authenticate(): ?LoginResponse
     {
-        return 'Iniciar Sesión';
+        // Verificar si se ha excedido el límite de intentos
+        $key = 'login_attempts:' . request()->ip();
+        $maxAttempts = 5;
+        $decayMinutes = 15;
+
+        if (RateLimiter::tooManyAttempts($key, $maxAttempts)) {
+            $retryAfter = RateLimiter::availableIn($key);
+            $minutes = ceil($retryAfter / 60);
+            
+            throw ValidationException::withMessages([
+                'data.username' => "Demasiados intentos fallidos. Intenta nuevamente en {$minutes} minuto(s).",
+            ]);
+        }
+
+        try {
+            return parent::authenticate();
+        } catch (ValidationException $e) {
+            // Registrar el intento fallido
+            RateLimiter::hit($key, $decayMinutes * 60);
+            
+            throw $e;
+        }
     }
 
-    public function getSubHeading(): string | Htmlable | null
+    protected function throwFailureValidationException(): never
     {
-        return 'Ingresa con tu usuario para acceder al portal';
-    }
-
-    protected function getAuthenticateFormAction(): \Filament\Actions\Action
-    {
-        return parent::getAuthenticateFormAction()
-            ->label('Entrar');
+        throw ValidationException::withMessages([
+            'data.username' => __('filament-panels::pages/auth/login.messages.failed'),
+        ]);
     }
 }

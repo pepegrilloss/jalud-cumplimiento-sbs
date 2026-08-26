@@ -35,33 +35,15 @@ return [
         ],
     ],
 
-    'labelary' => [
-        'enabled' => env('LABELARY_ENABLED', true),
-        'base_url' => rtrim(env('LABELARY_BASE_URL', 'https://api.labelary.com'), '/'),
-        'timeout' => (int) env('LABELARY_TIMEOUT', 8),
+    'apis_net_pe' => [
+        'url' => env('APIS_NET_PE_URL', 'https://api.apis.net.pe/v1/dni'),
+        'referer' => env('APIS_NET_PE_REFERER', 'https://apis.net.pe/consulta-dni-api'),
+        'token' => env('APIS_NET_PE_TOKEN'),
     ],
 
-    'dni_ocr' => [
-        'enabled' => env('DNI_OCR_ENABLED', false),
-        'tesseract_path' => env('TESSERACT_PATH', 'tesseract'),
-        'language' => env('TESSERACT_LANGUAGE', 'spa'),
-        'pass_timeout' => (int) env('TESSERACT_PASS_TIMEOUT', env('TESSERACT_TIMEOUT', 8)),
-        'dpi' => (int) env('TESSERACT_DPI', 300),
-        'tessdata_path' => env('TESSDATA_PREFIX') ?: storage_path('app/ocr/tessdata'),
-    ],
-
-    'meta_whatsapp' => [
-        'phone_number_id' => env('META_PHONE_NUMBER_ID'),
-        'business_account_id' => env('META_BUSINESS_ACCOUNT_ID'),
-        'access_token' => env('META_ACCESS_TOKEN'),
-        'webhook_verify_token' => env('META_WEBHOOK_VERIFY_TOKEN'),
-        'app_secret' => env('META_APP_SECRET'),
-        'template' => env('META_WHATSAPP_TEMPLATE', 'nueva_solicitud_visita'),
-        'template_next_approval' => env('META_WHATSAPP_TEMPLATE_NEXT_APPROVAL', 'siguiente_area_aprobacion'),
-        'template_approval_reminder' => env('META_WHATSAPP_TEMPLATE_APPROVAL_REMINDER', 'recordatorio_aprobacion_3h'),
-        'language' => env('META_WHATSAPP_LANGUAGE', 'es_PE'),
-        'admin_phone' => env('ADMIN_WHATSAPP'),
-        'timeout' => (int) env('META_WHATSAPP_TIMEOUT', 10),
+    'geografia' => [
+        'paises_url' => env('GEOGRAFIA_PAISES_URL', 'https://raw.githubusercontent.com/umpirsky/country-list/master/data/es/country.json'),
+        'ubigeos_url' => env('GEOGRAFIA_UBIGEOS_URL', 'https://free.e-api.net.pe/ubigeos.json'),
     ],
 
 ];

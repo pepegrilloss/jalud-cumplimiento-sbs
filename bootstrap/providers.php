@@ -1,9 +1,7 @@
 <?php
 
-use App\Providers\AppServiceProvider;
-use App\Providers\Filament\MlpVisitasPanelProvider;
-
 return [
-    AppServiceProvider::class,
-    MlpVisitasPanelProvider::class,
+    App\Providers\AppServiceProvider::class,
+    App\Providers\Filament\CumplimientoPanelProvider::class,
+    App\Providers\AuditServiceProvider::class,
 ];
