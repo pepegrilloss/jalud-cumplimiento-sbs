@@ -4,13 +4,19 @@ namespace Tests\Feature;
 
 use App\Filament\Cumplimiento\Resources\DeclaracionClienteResource;
 use App\Filament\Cumplimiento\Resources\DeclaracionTrabajadorResource;
+use App\Models\Cliente;
 use App\Models\DeclaracionCliente;
 use App\Models\DeclaracionTrabajador;
+use App\Models\LogAuditoria;
+use App\Models\Trabajador;
 use App\Models\TrabajadorArchivo;
+use App\Models\User;
+use App\Services\Declaraciones\EstadoPersonaAuditService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Mockery;
 use Tests\TestCase;
 
 class DeclaracionesListadoAgrupadoTest extends TestCase
@@ -78,6 +84,21 @@ class DeclaracionesListadoAgrupadoTest extends TestCase
             $table->bigInteger('SubidoPorID')->nullable();
             $table->timestamps();
         });
+
+        Schema::create('logs', function (Blueprint $table): void {
+            $table->bigIncrements('id');
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->string('accion');
+            $table->string('modelo');
+            $table->unsignedBigInteger('modelo_id');
+            $table->json('old_values')->nullable();
+            $table->json('new_values')->nullable();
+            $table->string('ip_address')->nullable();
+            $table->string('user_agent')->nullable();
+            $table->string('platform')->nullable();
+            $table->unsignedBigInteger('SedeID')->nullable();
+            $table->timestamp('created_at')->nullable();
+        });
     }
 
     protected function tearDown(): void
@@ -87,6 +108,7 @@ class DeclaracionesListadoAgrupadoTest extends TestCase
         Schema::dropIfExists('Cliente');
         Schema::dropIfExists('dj_declaraciones_trabajador');
         Schema::dropIfExists('dj_trabajadores');
+        Schema::dropIfExists('logs');
 
         parent::tearDown();
     }
@@ -186,6 +208,51 @@ class DeclaracionesListadoAgrupadoTest extends TestCase
 
         $archivo->delete();
         Storage::disk('local')->assertMissing('declaraciones/trabajadores/adjuntos/convenio.pdf');
+    }
+
+    public function test_baja_y_reactivacion_dejan_un_historial_auditable_completo(): void
+    {
+        $usuario = Mockery::mock(User::class)->makePartial();
+        $usuario->setRawAttributes(['id' => 77]);
+        $usuario->shouldReceive('hasRole')->with('super_admin')->andReturnTrue();
+        $this->app['auth']->login($usuario);
+
+        DB::table('dj_trabajadores')->insert([
+            'TrabajadorID' => 9,
+            'SedeID' => 1,
+            'Nombres' => 'Elena',
+            'ApellidoPaterno' => 'Vega',
+            'NumeroDocumento' => '33333333',
+            'Activo' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $trabajador = Trabajador::withoutGlobalScope('sede')->findOrFail(9);
+        $servicio = app(EstadoPersonaAuditService::class);
+        $servicio->cambiar($trabajador, false, 'Fin de la relación laboral.');
+        $servicio->cambiar($trabajador->fresh(), true, 'Se regularizó su contratación.');
+
+        $historial = LogAuditoria::query()->where('modelo', 'Trabajador')->where('modelo_id', 9)->orderBy('id')->get();
+
+        self::assertTrue((bool) $trabajador->fresh()->Activo);
+        self::assertCount(2, $historial);
+        self::assertSame('DAR_DE_BAJA', $historial->first()->accion);
+        self::assertTrue($historial->first()->old_values['activo']);
+        self::assertFalse($historial->first()->new_values['activo']);
+        self::assertSame('Fin de la relación laboral.', $historial->first()->new_values['motivo']);
+        self::assertSame(77, $historial->first()->user_id);
+        self::assertSame('REACTIVAR', $historial->last()->accion);
+        self::assertTrue($historial->last()->new_values['activo']);
+
+        DB::table('Cliente')->insert(['ClienteID' => 31, 'SedeID' => 1, 'Activo' => true]);
+        $cliente = Cliente::withoutGlobalScope('sede')->findOrFail(31);
+        $servicio->cambiar($cliente, false, 'Cierre de la relación comercial.');
+
+        $historialCliente = LogAuditoria::query()->where('modelo', 'Cliente')->where('modelo_id', 31)->sole();
+        self::assertSame('DAR_DE_BAJA', $historialCliente->accion);
+        self::assertFalse($historialCliente->new_values['activo']);
+        self::assertSame('Cierre de la relación comercial.', $historialCliente->new_values['motivo']);
     }
 
     private function declaracionTrabajador(int $id, int $trabajadorId, int $version, string $nombre, string $documento): array

@@ -43,6 +43,13 @@ class DeclaracionCliente extends Model
         return $this->belongsTo(Cliente::class, 'ClienteID', 'ClienteID');
     }
 
+    public function historialEstado(): HasMany
+    {
+        return $this->hasMany(LogAuditoria::class, 'modelo_id', 'ClienteID')
+            ->where('modelo', 'Cliente')
+            ->whereIn('accion', ['DAR_DE_BAJA', 'REACTIVAR']);
+    }
+
     public function versiones(): HasMany
     {
         return $this->hasMany(self::class, 'ClienteID', 'ClienteID')

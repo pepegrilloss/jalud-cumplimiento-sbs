@@ -10,8 +10,10 @@ use App\Filament\Cumplimiento\Resources\DeclaracionClienteResource\RelationManag
 use App\Filament\Forms\CamposGeograficos;
 use App\Models\Cliente;
 use App\Models\DeclaracionCliente;
+use App\Services\Declaraciones\EstadoPersonaAuditService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -195,7 +197,44 @@ class DeclaracionClienteResource extends Resource
                 Tables\Columns\TextColumn::make('Estado')->badge()->formatStateUsing(fn ($state) => EstadoDeclaracion::tryFrom($state)?->label() ?? $state)->color(fn ($state) => $state === 'FINALIZADO' ? 'success' : 'warning'),
                 Tables\Columns\TextColumn::make('situacion_cliente')->label('Situación')->state(fn ($record): string => $record->cliente?->Activo ? 'Activo' : 'De baja')->badge()->color(fn (string $state): string => $state === 'Activo' ? 'success' : 'gray'),
                 Tables\Columns\IconColumn::make('documento')->label('Declaración')->state(fn ($record) => $record->documentos()->where('TipoDocumento', 'CLIENTE_REGIMEN_GENERAL')->exists())->boolean(),
-            ])->actions([Tables\Actions\ViewAction::make(), Tables\Actions\EditAction::make()->visible(fn ($record) => $record->Estado === 'BORRADOR')])->bulkActions([]);
+            ])->actions([
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make()->visible(fn ($record) => $record->Estado === 'BORRADOR'),
+                Tables\Actions\Action::make('dar_de_baja')
+                    ->label('Dar de baja')
+                    ->icon('heroicon-o-user-minus')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->form([
+                        Forms\Components\Textarea::make('motivo')
+                            ->label('Motivo de la baja')
+                            ->required()
+                            ->minLength(5)
+                            ->maxLength(1000),
+                    ])
+                    ->visible(fn ($record): bool => (bool) $record->cliente?->Activo && (auth()->user()?->hasRole('super_admin') || auth()->user()?->can('editar_declaraciones_cliente')))
+                    ->action(function ($record, array $data): void {
+                        app(EstadoPersonaAuditService::class)->cambiar($record->cliente, false, $data['motivo']);
+                        Notification::make()->success()->title('Cliente marcado como de baja')->send();
+                    }),
+                Tables\Actions\Action::make('reactivar')
+                    ->label('Reactivar')
+                    ->icon('heroicon-o-user-plus')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->form([
+                        Forms\Components\Textarea::make('motivo')
+                            ->label('Motivo de la reactivación')
+                            ->required()
+                            ->minLength(5)
+                            ->maxLength(1000),
+                    ])
+                    ->visible(fn ($record): bool => ! (bool) $record->cliente?->Activo && (auth()->user()?->hasRole('super_admin') || auth()->user()?->can('editar_declaraciones_cliente')))
+                    ->action(function ($record, array $data): void {
+                        app(EstadoPersonaAuditService::class)->cambiar($record->cliente, true, $data['motivo']);
+                        Notification::make()->success()->title('Cliente reactivado')->send();
+                    }),
+            ])->bulkActions([]);
     }
 
     public static function soloUltimaVersion(Builder $query): Builder
@@ -218,7 +257,10 @@ class DeclaracionClienteResource extends Resource
 
     public static function getRelations(): array
     {
-        return [RelationManagers\VersionesRelationManager::class];
+        return [
+            RelationManagers\VersionesRelationManager::class,
+            RelationManagers\HistorialEstadoRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

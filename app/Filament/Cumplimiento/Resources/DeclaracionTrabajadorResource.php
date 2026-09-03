@@ -13,6 +13,7 @@ use App\Filament\Forms\CamposGeograficos;
 use App\Models\DeclaracionTrabajador;
 use App\Models\Trabajador;
 use App\Services\Declaraciones\ConsultaDniPeruService;
+use App\Services\Declaraciones\EstadoPersonaAuditService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -342,9 +343,16 @@ class DeclaracionTrabajadorResource extends Resource
                     ->icon('heroicon-o-user-minus')
                     ->color('danger')
                     ->requiresConfirmation()
+                    ->form([
+                        Forms\Components\Textarea::make('motivo')
+                            ->label('Motivo de la baja')
+                            ->required()
+                            ->minLength(5)
+                            ->maxLength(1000),
+                    ])
                     ->visible(fn ($record): bool => (bool) $record->trabajador?->Activo && (auth()->user()?->hasRole('super_admin') || auth()->user()?->can('editar_declaraciones_trabajador')))
-                    ->action(function ($record): void {
-                        $record->trabajador?->update(['Activo' => false]);
+                    ->action(function ($record, array $data): void {
+                        app(EstadoPersonaAuditService::class)->cambiar($record->trabajador, false, $data['motivo']);
                         Notification::make()->success()->title('Trabajador marcado como de baja')->send();
                     }),
                 Tables\Actions\Action::make('reactivar')
@@ -352,9 +360,16 @@ class DeclaracionTrabajadorResource extends Resource
                     ->icon('heroicon-o-user-plus')
                     ->color('success')
                     ->requiresConfirmation()
+                    ->form([
+                        Forms\Components\Textarea::make('motivo')
+                            ->label('Motivo de la reactivación')
+                            ->required()
+                            ->minLength(5)
+                            ->maxLength(1000),
+                    ])
                     ->visible(fn ($record): bool => ! (bool) $record->trabajador?->Activo && (auth()->user()?->hasRole('super_admin') || auth()->user()?->can('editar_declaraciones_trabajador')))
-                    ->action(function ($record): void {
-                        $record->trabajador?->update(['Activo' => true]);
+                    ->action(function ($record, array $data): void {
+                        app(EstadoPersonaAuditService::class)->cambiar($record->trabajador, true, $data['motivo']);
                         Notification::make()->success()->title('Trabajador reactivado')->send();
                     }),
             ])->bulkActions([]);
@@ -383,6 +398,7 @@ class DeclaracionTrabajadorResource extends Resource
         return [
             RelationManagers\VersionesRelationManager::class,
             RelationManagers\ArchivosAdjuntosRelationManager::class,
+            RelationManagers\HistorialEstadoRelationManager::class,
         ];
     }
 

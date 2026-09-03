@@ -47,6 +47,13 @@ class DeclaracionTrabajador extends Model
         return $this->belongsTo(Trabajador::class, 'TrabajadorID', 'TrabajadorID');
     }
 
+    public function historialEstado(): HasMany
+    {
+        return $this->hasMany(LogAuditoria::class, 'modelo_id', 'TrabajadorID')
+            ->where('modelo', 'Trabajador')
+            ->whereIn('accion', ['DAR_DE_BAJA', 'REACTIVAR']);
+    }
+
     public function versiones(): HasMany
     {
         return $this->hasMany(self::class, 'TrabajadorID', 'TrabajadorID')
