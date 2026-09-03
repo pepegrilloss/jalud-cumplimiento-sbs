@@ -31,7 +31,6 @@ class HistorialEstadoRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('new_values.situacion')->label('Estado nuevo'),
                 Tables\Columns\TextColumn::make('new_values.motivo')->label('Motivo')->wrap(),
                 Tables\Columns\TextColumn::make('user.name')->label('Usuario')->placeholder('Sistema'),
-                Tables\Columns\TextColumn::make('ip_address')->label('IP')->placeholder('—'),
             ])
             ->headerActions([])
             ->actions([])
