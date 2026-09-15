@@ -2,11 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Traits\BelongsToSede;
 
-class Zona extends Model
+class Zona extends JaludReadModel
 {
     use BelongsToSede;
     protected $table = 'Zona';

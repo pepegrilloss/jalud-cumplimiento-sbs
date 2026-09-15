@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Cumplimiento\Resources\DeclaracionClienteResource;
 use App\Filament\Cumplimiento\Resources\DeclaracionTrabajadorResource;
 use App\Models\Cliente;
+use App\Models\ClienteCumplimiento;
 use App\Models\DeclaracionCliente;
 use App\Models\DeclaracionTrabajador;
 use App\Models\LogAuditoria;
@@ -85,6 +86,13 @@ class DeclaracionesListadoAgrupadoTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('dj_clientes', function (Blueprint $table): void {
+            $table->unsignedBigInteger('ClienteID')->primary();
+            $table->integer('SedeID');
+            $table->boolean('Activo')->default(true);
+            $table->timestamps();
+        });
+
         Schema::create('logs', function (Blueprint $table): void {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('user_id')->nullable();
@@ -105,6 +113,7 @@ class DeclaracionesListadoAgrupadoTest extends TestCase
     {
         Schema::dropIfExists('dj_trabajador_archivos');
         Schema::dropIfExists('dj_declaraciones_cliente');
+        Schema::dropIfExists('dj_clientes');
         Schema::dropIfExists('Cliente');
         Schema::dropIfExists('dj_declaraciones_trabajador');
         Schema::dropIfExists('dj_trabajadores');
@@ -139,7 +148,7 @@ class DeclaracionesListadoAgrupadoTest extends TestCase
 
     public function test_listado_de_clientes_conserva_solo_la_ultima_version_por_persona(): void
     {
-        DB::table('Cliente')->insert([
+        DB::table('dj_clientes')->insert([
             ['ClienteID' => 10, 'SedeID' => 1, 'Activo' => true],
             ['ClienteID' => 20, 'SedeID' => 1, 'Activo' => true],
         ]);
@@ -245,11 +254,11 @@ class DeclaracionesListadoAgrupadoTest extends TestCase
         self::assertSame('REACTIVAR', $historial->last()->accion);
         self::assertTrue($historial->last()->new_values['activo']);
 
-        DB::table('Cliente')->insert(['ClienteID' => 31, 'SedeID' => 1, 'Activo' => true]);
-        $cliente = Cliente::withoutGlobalScope('sede')->findOrFail(31);
+        DB::table('dj_clientes')->insert(['ClienteID' => 31, 'SedeID' => 1, 'Activo' => true, 'created_at' => now(), 'updated_at' => now()]);
+        $cliente = ClienteCumplimiento::withoutGlobalScope('sede')->findOrFail(31);
         $servicio->cambiar($cliente, false, 'Cierre de la relación comercial.');
 
-        $historialCliente = LogAuditoria::query()->where('modelo', 'Cliente')->where('modelo_id', 31)->sole();
+        $historialCliente = LogAuditoria::query()->where('modelo', 'ClienteCumplimiento')->where('modelo_id', 31)->sole();
         self::assertSame('DAR_DE_BAJA', $historialCliente->accion);
         self::assertFalse($historialCliente->new_values['activo']);
         self::assertSame('Cierre de la relación comercial.', $historialCliente->new_values['motivo']);

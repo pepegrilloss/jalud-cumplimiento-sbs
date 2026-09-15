@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Traits\BelongsToSede;
 
-class Cliente extends Model
+class Cliente extends JaludReadModel
 {
     use BelongsToSede;
     protected $table = 'Cliente';

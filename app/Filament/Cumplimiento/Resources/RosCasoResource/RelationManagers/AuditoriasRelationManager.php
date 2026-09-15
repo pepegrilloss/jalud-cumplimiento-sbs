@@ -29,9 +29,20 @@ class AuditoriasRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('Modelo')->label('Elemento'),
                 Tables\Columns\TextColumn::make('ModeloID')->label('ID'),
                 Tables\Columns\TextColumn::make('IpAddress')->label('IP'),
+                Tables\Columns\TextColumn::make('Motivo')->limit(50)->placeholder('—'),
             ])
             ->headerActions([])
-            ->actions([])
+            ->actions([
+                Tables\Actions\Action::make('detalle')
+                    ->label('Detalle')
+                    ->icon('heroicon-o-eye')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Cerrar')
+                    ->form([
+                        \Filament\Forms\Components\KeyValue::make('ValoresAnteriores')->label('Valores anteriores')->disabled(),
+                        \Filament\Forms\Components\KeyValue::make('ValoresNuevos')->label('Valores nuevos')->disabled(),
+                    ]),
+            ])
             ->bulkActions([]);
     }
 }

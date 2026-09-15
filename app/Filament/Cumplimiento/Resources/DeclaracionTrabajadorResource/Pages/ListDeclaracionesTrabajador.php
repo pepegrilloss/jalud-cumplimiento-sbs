@@ -30,7 +30,7 @@ class ListDeclaracionesTrabajador extends ListRecords
                 ->badge($this->contarPorEstado(false))
                 ->modifyQueryUsing(fn (Builder $query): Builder => $this->filtrarPorEstado($query, false)),
             'todos' => Tab::make('Todos')
-                ->badge(DeclaracionTrabajador::withoutGlobalScope('sede')->distinct()->count('TrabajadorID')),
+                ->badge(DeclaracionTrabajador::query()->distinct()->count('TrabajadorID')),
         ];
     }
 
@@ -42,15 +42,13 @@ class ListDeclaracionesTrabajador extends ListRecords
     private function filtrarPorEstado(Builder $query, bool $activo): Builder
     {
         return $query->whereHas('trabajador', fn (Builder $trabajadores): Builder => $trabajadores
-            ->withoutGlobalScopes()
             ->where('Activo', $activo));
     }
 
     private function contarPorEstado(bool $activo): int
     {
-        return DeclaracionTrabajador::withoutGlobalScope('sede')
+        return DeclaracionTrabajador::query()
             ->whereHas('trabajador', fn (Builder $trabajadores): Builder => $trabajadores
-                ->withoutGlobalScopes()
                 ->where('Activo', $activo))
             ->distinct()
             ->count('TrabajadorID');

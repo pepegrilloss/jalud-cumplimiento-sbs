@@ -10,7 +10,7 @@ return [
         'sub_navigation_position' => null,
         'is_globally_searchable' => false,
         'show_model_path' => true,
-        'is_scoped_to_tenant' => true,
+        'is_scoped_to_tenant' => false,
         'cluster' => null,
     ],
 
@@ -68,6 +68,14 @@ return [
         'versionar_declaraciones_cliente',
         'generar_pdf_declaraciones',
         'descargar_declaraciones',
+        'view_rop::registro',
+        'view_any_rop::registro',
+        'sincronizar_rop',
+        'completar_rop',
+        'calificar_rop',
+        'cerrar_periodo_rop',
+        'generar_ros_desde_rop',
+        'descargar_reportes_rop_ros',
     ],
 
     'generator' => [

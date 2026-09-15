@@ -40,13 +40,13 @@ class DeclaracionCliente extends Model
 
     public function cliente(): BelongsTo
     {
-        return $this->belongsTo(Cliente::class, 'ClienteID', 'ClienteID');
+        return $this->belongsTo(ClienteCumplimiento::class, 'ClienteID', 'ClienteID');
     }
 
     public function historialEstado(): HasMany
     {
         return $this->hasMany(LogAuditoria::class, 'modelo_id', 'ClienteID')
-            ->where('modelo', 'Cliente')
+            ->whereIn('modelo', ['ClienteCumplimiento', 'Cliente'])
             ->whereIn('accion', ['DAR_DE_BAJA', 'REACTIVAR']);
     }
 

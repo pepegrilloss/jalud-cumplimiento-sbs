@@ -3,6 +3,7 @@
 namespace App\Services\Declaraciones;
 
 use App\Models\Cliente;
+use App\Models\ClienteCumplimiento;
 use App\Models\LogAuditoria;
 use App\Models\Trabajador;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -54,7 +55,7 @@ class EstadoPersonaAuditService
     {
         $permiso = match (true) {
             $persona instanceof Trabajador => 'editar_declaraciones_trabajador',
-            $persona instanceof Cliente => 'editar_declaraciones_cliente',
+            $persona instanceof ClienteCumplimiento => 'editar_declaraciones_cliente',
             default => throw new \InvalidArgumentException('Modelo no auditable para este cambio de estado.'),
         };
 

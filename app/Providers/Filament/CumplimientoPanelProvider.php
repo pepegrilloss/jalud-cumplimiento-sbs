@@ -2,10 +2,18 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Cumplimiento\Resources\RosCasoResource;
-use App\Filament\Cumplimiento\Resources\DeclaracionTrabajadorResource;
+use App\Filament\Cumplimiento\Pages\ReportesRopRos;
+use App\Filament\Cumplimiento\Pages\SelectSede;
 use App\Filament\Cumplimiento\Resources\DeclaracionClienteResource;
+use App\Filament\Cumplimiento\Resources\DeclaracionTrabajadorResource;
+use App\Filament\Cumplimiento\Resources\RopCatalogoItemResource;
+use App\Filament\Cumplimiento\Resources\RopRegistroResource;
+use App\Filament\Cumplimiento\Resources\RosCasoResource;
+use App\Filament\Cumplimiento\Resources\RosCatalogoItemResource;
+use App\Filament\Cumplimiento\Resources\RosConfiguracionResource;
+use App\Filament\Cumplimiento\Resources\UserResource;
 use App\Filament\Pages\Auth\Login;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -39,10 +47,15 @@ class CumplimientoPanelProvider extends PanelProvider
             ->assets([Css::make('custom-login-css', asset('css/login-custom.css'))])
             ->renderHook(
                 PanelsRenderHook::HEAD_START,
-                fn(): string => '<link rel="stylesheet" href="' . asset('css/login-custom.css') . '?v=' . filemtime(public_path('css/login-custom.css')) . '">'
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/login-custom.css').'?v='.filemtime(public_path('css/login-custom.css')).'">'
             )
-            ->navigationGroups(['Declaraciones juradas', 'Cumplimiento'])
-            ->resources([DeclaracionTrabajadorResource::class, DeclaracionClienteResource::class, RosCasoResource::class])
+            ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+                fn (): string => view('filament.cumplimiento.components.sede-activa')->render(),
+            )
+            ->navigationGroups(['Declaraciones juradas', 'Cumplimiento', 'Administración'])
+            ->pages([SelectSede::class, ReportesRopRos::class])
+            ->resources([DeclaracionTrabajadorResource::class, DeclaracionClienteResource::class, RopRegistroResource::class, RopCatalogoItemResource::class, RosCasoResource::class, RosCatalogoItemResource::class, RosConfiguracionResource::class, UserResource::class])
             ->databaseTransactions()
             ->middleware([
                 EncryptCookies::class,
@@ -55,8 +68,12 @@ class CumplimientoPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 \Hasnayeen\Themes\Http\Middleware\SetTheme::class,
                 DispatchServingFilamentEvent::class,
+                \App\Http\Middleware\EnsureSedeIsSelected::class,
             ])
-            ->plugins([\Hasnayeen\Themes\ThemesPlugin::make()])
+            ->plugins([
+                \Hasnayeen\Themes\ThemesPlugin::make(),
+                FilamentShieldPlugin::make(),
+            ])
             ->authMiddleware([Authenticate::class]);
     }
 }

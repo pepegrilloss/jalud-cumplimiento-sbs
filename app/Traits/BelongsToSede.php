@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Trait BelongsToSede
- * 
+ *
  * Proporciona funcionalidad multi-sede a los modelos:
  * 1. Auto-asigna SedeID al crear un registro (toma la sede del usuario autenticado)
  * 2. Aplica un Global Scope que filtra automáticamente por sede (excepto para super_admin)
- * 
+ *
  * Uso: Agregar `use BelongsToSede;` en el modelo y `'SedeID'` en $fillable
  */
 trait BelongsToSede
@@ -39,24 +39,16 @@ trait BelongsToSede
 
         // Global Scope: filtrar automáticamente por sede (con caché)
         static::addGlobalScope('sede', function (Builder $query) {
-            if (!auth()->check()) {
+            if (! auth()->check()) {
                 return;
             }
 
             $filter = self::resolveSedeFilter();
 
-            if ($filter['esPrivilegiado']) {
-                if ($filter['sedeActiva']) {
-                    $query->where($query->getModel()->getTable() . '.SedeID', $filter['sedeActiva']);
-                } else {
-                    $query->whereRaw('1 = 0');
-                }
-            } else {
-                // Usuario normal: filtrar siempre por su sede asignada
-                if ($filter['sedeUsuario']) {
-                    $query->where($query->getModel()->getTable() . '.SedeID', $filter['sedeUsuario']);
-                }
-            }
+            $sedeId = $filter['sedeActiva'];
+            $sedeId
+                ? $query->where($query->getModel()->getTable().'.SedeID', $sedeId)
+                : $query->whereRaw('1 = 0');
         });
     }
 
@@ -73,8 +65,7 @@ trait BelongsToSede
         $user = auth()->user();
 
         self::$sedeFilterCache = [
-            'esPrivilegiado' => $user->isPrivileged(),
-            'sedeActiva' => session('sede_activa'),
+            'sedeActiva' => $user->getEffectiveSedeId(),
             'sedeUsuario' => $user->SedeID,
         ];
 

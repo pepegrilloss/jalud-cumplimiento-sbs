@@ -21,6 +21,9 @@ class RosAuditObserver
         }
 
         RosAuditoria::withoutEvents(function () use ($accion, $model, $casoId): void {
+            $anteriores = $accion === 'CREAR' ? [] : $model->getOriginal();
+            $nuevos = $accion === 'ELIMINAR' ? [] : ($accion === 'ACTUALIZAR' ? $model->getChanges() : $model->getAttributes());
+
             RosAuditoria::create([
                 'RosCasoID' => $casoId,
                 'SedeID' => $model->SedeID,
@@ -28,6 +31,8 @@ class RosAuditObserver
                 'Accion' => $accion,
                 'Modelo' => class_basename($model),
                 'ModeloID' => $model->getKey(),
+                'ValoresAnteriores' => $anteriores,
+                'ValoresNuevos' => $nuevos,
                 'IpAddress' => request()?->ip(),
                 'created_at' => now(),
             ]);

@@ -1,18 +1,108 @@
 <?php
+
 namespace App\Policies;
-use App\Enums\Declaraciones\EstadoDeclaracion;
-use App\Models\DeclaracionCliente;
+
 use App\Models\User;
+use App\Models\DeclaracionCliente;
+use Illuminate\Auth\Access\HandlesAuthorization;
+
 class DeclaracionClientePolicy
 {
-    private function puede(User $u, string $permiso): bool { return $u->hasRole('super_admin') || $u->can($permiso); }
-    public function viewAny(User $u): bool { return $this->puede($u, 'ver_declaraciones_cliente'); }
-    public function view(User $u, DeclaracionCliente $d): bool { return $this->puede($u, 'ver_declaraciones_cliente'); }
-    public function create(User $u): bool { return $this->puede($u, 'crear_declaraciones_cliente'); }
-    public function update(User $u, DeclaracionCliente $d): bool { return $this->puede($u, 'editar_declaraciones_cliente') && $d->Estado === EstadoDeclaracion::BORRADOR->value; }
-    public function delete(User $u, DeclaracionCliente $d): bool { return false; }
-    public function finalizar(User $u, DeclaracionCliente $d): bool { return $this->puede($u, 'finalizar_declaraciones_cliente') && $d->Estado === EstadoDeclaracion::BORRADOR->value; }
-    public function generarPdf(User $u, DeclaracionCliente $d): bool { return $this->puede($u, 'generar_pdf_declaraciones') && $d->Estado === EstadoDeclaracion::FINALIZADO->value; }
-    public function descargar(User $u, DeclaracionCliente $d): bool { return $this->puede($u, 'descargar_declaraciones'); }
-    public function nuevaVersion(User $u, DeclaracionCliente $d): bool { return $this->puede($u, 'versionar_declaraciones_cliente') && $d->Estado === EstadoDeclaracion::FINALIZADO->value; }
+    use HandlesAuthorization;
+
+    /**
+     * Determine whether the user can view any models.
+     */
+    public function viewAny(User $user): bool
+    {
+        return $user->can('view_any_declaracion::cliente');
+    }
+
+    /**
+     * Determine whether the user can view the model.
+     */
+    public function view(User $user, DeclaracionCliente $declaracionCliente): bool
+    {
+        return $user->can('view_declaracion::cliente');
+    }
+
+    /**
+     * Determine whether the user can create models.
+     */
+    public function create(User $user): bool
+    {
+        return $user->can('create_declaracion::cliente');
+    }
+
+    /**
+     * Determine whether the user can update the model.
+     */
+    public function update(User $user, DeclaracionCliente $declaracionCliente): bool
+    {
+        return $user->can('update_declaracion::cliente');
+    }
+
+    /**
+     * Determine whether the user can delete the model.
+     */
+    public function delete(User $user, DeclaracionCliente $declaracionCliente): bool
+    {
+        return $user->can('delete_declaracion::cliente');
+    }
+
+    /**
+     * Determine whether the user can bulk delete.
+     */
+    public function deleteAny(User $user): bool
+    {
+        return $user->can('{{ DeleteAny }}');
+    }
+
+    /**
+     * Determine whether the user can permanently delete.
+     */
+    public function forceDelete(User $user, DeclaracionCliente $declaracionCliente): bool
+    {
+        return $user->can('{{ ForceDelete }}');
+    }
+
+    /**
+     * Determine whether the user can permanently bulk delete.
+     */
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->can('{{ ForceDeleteAny }}');
+    }
+
+    /**
+     * Determine whether the user can restore.
+     */
+    public function restore(User $user, DeclaracionCliente $declaracionCliente): bool
+    {
+        return $user->can('{{ Restore }}');
+    }
+
+    /**
+     * Determine whether the user can bulk restore.
+     */
+    public function restoreAny(User $user): bool
+    {
+        return $user->can('{{ RestoreAny }}');
+    }
+
+    /**
+     * Determine whether the user can replicate.
+     */
+    public function replicate(User $user, DeclaracionCliente $declaracionCliente): bool
+    {
+        return $user->can('{{ Replicate }}');
+    }
+
+    /**
+     * Determine whether the user can reorder.
+     */
+    public function reorder(User $user): bool
+    {
+        return $user->can('{{ Reorder }}');
+    }
 }

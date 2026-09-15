@@ -43,7 +43,7 @@ class DeclaracionClienteResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->withoutGlobalScope('sede');
+        return parent::getEloquentQuery();
     }
 
     private static function accionGuardarBorrador(): HtmlString
@@ -125,7 +125,7 @@ class DeclaracionClienteResource extends Resource
 
     public static function clientesDisponiblesQuery(): Builder
     {
-        $query = Cliente::withoutGlobalScope('sede')->where('Activo', true);
+        $query = Cliente::query()->where('Activo', true);
 
         return auth()->check() ? $query : $query->whereRaw('1 = 0');
     }
@@ -242,7 +242,6 @@ class DeclaracionClienteResource extends Resource
         return $query->whereIn(
             'DeclaracionClienteID',
             DeclaracionCliente::query()
-                ->withoutGlobalScope('sede')
                 ->selectRaw('MAX(DeclaracionClienteID)')
                 ->groupBy('ClienteID'),
         );

@@ -2,11 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Traits\BelongsToSede;
 use App\Services\SedeIntegrityService;
 
-class Pago extends Model
+class Pago extends JaludReadModel
 {
     use BelongsToSede;
 

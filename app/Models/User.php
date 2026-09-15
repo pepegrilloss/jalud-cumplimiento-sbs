@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\SedeContext;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -10,7 +11,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements FilamentUser
 {
-    use Notifiable, HasRoles;
+    use HasRoles, Notifiable;
 
     protected $table = 'users';
 
@@ -44,7 +45,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function getEffectiveSedeId(): ?int
     {
-        return $this->SedeID ? (int) $this->SedeID : null;
+        return app(SedeContext::class)->sedeActivaId($this);
     }
 
     public function isPrivileged(): bool

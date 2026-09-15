@@ -24,7 +24,6 @@ return new class extends Migration
             $table->string('ClaseReporte', 20)->default('INICIAL');
             $table->string('NumeroReporteAnterior', 60)->nullable();
             $table->date('FechaReporteAnterior')->nullable();
-            $table->date('FechaDeteccion')->nullable()->index();
             $table->date('FechaOperacionDesde')->nullable();
             $table->date('FechaOperacionHasta')->nullable();
             $table->decimal('MontoTotal', 14, 2)->nullable();
@@ -35,13 +34,11 @@ return new class extends Migration
             $table->string('SectorEconomico', 150)->nullable();
             $table->string('ActividadEconomica', 150)->nullable();
             $table->longText('DescripcionHechos')->nullable();
-            $table->longText('ConclusionEvaluacion')->nullable();
             $table->timestamp('FechaReportado')->nullable();
             $table->unsignedBigInteger('CreadoPorID')->nullable()->index();
             $table->unsignedBigInteger('ActualizadoPorID')->nullable()->index();
-            $table->boolean('EsDatosPrueba')->default(false)->index();
             $table->timestamps();
-            $table->index(['SedeID', 'Estado', 'FechaDeteccion'], 'idx_ros_caso_sede_estado_fecha');
+            $table->index(['SedeID', 'Estado', 'created_at'], 'idx_ros_caso_sede_estado_creado');
         });
 
         Schema::create('ros_personas', function (Blueprint $table) {

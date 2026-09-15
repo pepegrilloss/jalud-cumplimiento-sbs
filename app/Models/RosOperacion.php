@@ -15,9 +15,10 @@ class RosOperacion extends Model
     protected $primaryKey = 'RosOperacionID';
     protected $fillable = [
         'RosCasoID', 'SedeID', 'ClienteID', 'CreditoID', 'PagoID', 'ProductoServicio',
-        'CodigoProducto', 'NumeroOperacion', 'Monto', 'Moneda', 'FechaOperacion', 'Detalle',
+        'CodigoProducto', 'NumeroOperacion', 'Monto', 'Moneda', 'FechaOperacion',
+        'PaisRelacionado', 'Orden', 'Detalle',
     ];
-    protected $casts = ['Monto' => 'decimal:2', 'FechaOperacion' => 'date'];
+    protected $casts = ['Monto' => 'decimal:2', 'FechaOperacion' => 'date', 'Orden' => 'integer'];
 
     public function caso(): BelongsTo { return $this->belongsTo(RosCaso::class, 'RosCasoID', 'RosCasoID'); }
     public function cliente(): BelongsTo { return $this->belongsTo(Cliente::class, 'ClienteID', 'ClienteID'); }

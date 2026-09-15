@@ -13,8 +13,15 @@ class RosAuditoria extends Model
     protected $table = 'ros_auditorias';
     protected $primaryKey = 'RosAuditoriaID';
     public $timestamps = false;
-    protected $fillable = ['RosCasoID', 'SedeID', 'UserID', 'Accion', 'Modelo', 'ModeloID', 'IpAddress', 'created_at'];
-    protected $casts = ['created_at' => 'datetime'];
+    protected $fillable = [
+        'RosCasoID', 'SedeID', 'UserID', 'Accion', 'Modelo', 'ModeloID', 'ValoresAnteriores',
+        'ValoresNuevos', 'Motivo', 'IpAddress', 'created_at',
+    ];
+    protected $casts = [
+        'ValoresAnteriores' => 'array',
+        'ValoresNuevos' => 'array',
+        'created_at' => 'datetime',
+    ];
 
     public function caso(): BelongsTo { return $this->belongsTo(RosCaso::class, 'RosCasoID', 'RosCasoID'); }
     public function usuario(): BelongsTo { return $this->belongsTo(User::class, 'UserID'); }

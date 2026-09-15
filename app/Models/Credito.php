@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Traits\BelongsToSede;
 
-class Credito extends Model
+class Credito extends JaludReadModel
 {
     use BelongsToSede;
     protected $table = 'Credito';

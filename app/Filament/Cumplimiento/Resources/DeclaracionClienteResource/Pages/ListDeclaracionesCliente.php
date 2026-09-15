@@ -28,7 +28,7 @@ class ListDeclaracionesCliente extends ListRecords
                 ->badge($this->contarPorEstado(false))
                 ->modifyQueryUsing(fn (Builder $query): Builder => $this->filtrarPorEstado($query, false)),
             'todos' => Tab::make('Todos')
-                ->badge(DeclaracionCliente::withoutGlobalScope('sede')->distinct()->count('ClienteID')),
+                ->badge(DeclaracionCliente::query()->distinct()->count('ClienteID')),
         ];
     }
 
@@ -40,15 +40,13 @@ class ListDeclaracionesCliente extends ListRecords
     private function filtrarPorEstado(Builder $query, bool $activo): Builder
     {
         return $query->whereHas('cliente', fn (Builder $clientes): Builder => $clientes
-            ->withoutGlobalScopes()
             ->where('Activo', $activo));
     }
 
     private function contarPorEstado(bool $activo): int
     {
-        return DeclaracionCliente::withoutGlobalScope('sede')
+        return DeclaracionCliente::query()
             ->whereHas('cliente', fn (Builder $clientes): Builder => $clientes
-                ->withoutGlobalScopes()
                 ->where('Activo', $activo))
             ->distinct()
             ->count('ClienteID');

@@ -2,11 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\BelongsToSede;
 
-class ProposicionCredito extends Model
+class ProposicionCredito extends JaludReadModel
 {
     use BelongsToSede;
     protected $table = 'ProposicionCredito';

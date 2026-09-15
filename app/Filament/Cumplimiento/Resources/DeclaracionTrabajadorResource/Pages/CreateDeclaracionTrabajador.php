@@ -10,7 +10,7 @@ class CreateDeclaracionTrabajador extends CreateRecord
     protected static string $resource = DeclaracionTrabajadorResource::class;
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $t = Trabajador::withoutGlobalScopes()->findOrFail($data['TrabajadorID']);
+        $t = Trabajador::query()->findOrFail($data['TrabajadorID']);
         return array_replace($data, app(DeclaracionTrabajadorService::class)->datosNuevaFicha($t));
     }
     protected function getFormActions(): array { return []; }

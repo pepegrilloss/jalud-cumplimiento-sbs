@@ -46,7 +46,7 @@ class DeclaracionTrabajadorResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->withoutGlobalScope('sede');
+        return parent::getEloquentQuery();
     }
 
     private static function accionGuardarBorrador(): HtmlString
@@ -102,11 +102,11 @@ class DeclaracionTrabajadorResource extends Resource
                     ->relationship(
                         name: 'trabajador',
                         titleAttribute: 'Nombres',
-                        modifyQueryUsing: fn ($query) => $query->withoutGlobalScopes()->where('Activo', true),
+                        modifyQueryUsing: fn ($query) => $query->where('Activo', true),
                     )
                     ->getOptionLabelFromRecordUsing(fn (Trabajador $record): string => "{$record->NombreCompleto} · {$record->NumeroDocumento}")
                     ->getOptionLabelUsing(function ($value): ?string {
-                        $record = Trabajador::withoutGlobalScopes()->find($value);
+                        $record = Trabajador::query()->find($value);
 
                         return $record
                             ? "{$record->NombreCompleto} · {$record->NumeroDocumento}"
@@ -169,7 +169,7 @@ class DeclaracionTrabajadorResource extends Resource
                         return Trabajador::withoutGlobalScopes()->create($data)->getKey();
                     })
                     ->afterStateUpdated(function ($state, Forms\Set $set): void {
-                        $t = Trabajador::withoutGlobalScopes()->find($state);
+                        $t = Trabajador::query()->find($state);
                         if (! $t) {
                             return;
                         }
@@ -380,7 +380,6 @@ class DeclaracionTrabajadorResource extends Resource
         return $query->whereIn(
             'DeclaracionTrabajadorID',
             DeclaracionTrabajador::query()
-                ->withoutGlobalScope('sede')
                 ->selectRaw('MAX(DeclaracionTrabajadorID)')
                 ->groupBy('TrabajadorID'),
         );

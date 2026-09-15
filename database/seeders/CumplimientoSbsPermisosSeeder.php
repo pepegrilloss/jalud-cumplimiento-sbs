@@ -26,13 +26,28 @@ class CumplimientoSbsPermisosSeeder extends Seeder
             'versionar_declaraciones_cliente',
             'generar_pdf_declaraciones',
             'descargar_declaraciones',
+            'view_rop::registro',
+            'view_any_rop::registro',
+            'sincronizar_rop',
+            'completar_rop',
+            'calificar_rop',
+            'cerrar_periodo_rop',
+            'generar_ros_desde_rop',
         ];
 
         foreach ($permisos as $permiso) {
             Permission::findOrCreate($permiso, 'web');
         }
 
+        $permisoReportes = Permission::findOrCreate('descargar_reportes_rop_ros', 'web');
+
         $rol = Role::findOrCreate('oficial_cumplimiento_sbs', 'web');
         $rol->syncPermissions($permisos);
+
+        // Los permisos incorporados después de crear el administrador también
+        // deben quedar disponibles para el rol principal del panel.
+        $superAdmin = Role::findOrCreate('super_admin', 'web');
+        $superAdmin->givePermissionTo($permisos);
+        $superAdmin->givePermissionTo($permisoReportes);
     }
 }

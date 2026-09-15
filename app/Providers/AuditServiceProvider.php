@@ -8,6 +8,7 @@ use App\Models\RosOperacion;
 use App\Models\RosPersona;
 use App\Models\RosSenalAlerta;
 use App\Models\RosTipologia;
+use App\Models\RosReportePrevio;
 use App\Observers\RosAuditObserver;
 use App\Observers\DeclaracionAuditObserver;
 use App\Models\DeclaracionTrabajador;
@@ -31,7 +32,7 @@ class AuditServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        foreach ([RosCaso::class, RosPersona::class, RosOperacion::class, RosSenalAlerta::class, RosTipologia::class, RosAdjunto::class] as $model) {
+        foreach ([RosCaso::class, RosPersona::class, RosOperacion::class, RosSenalAlerta::class, RosTipologia::class, RosAdjunto::class, RosReportePrevio::class] as $model) {
             $model::observe(RosAuditObserver::class);
         }
 

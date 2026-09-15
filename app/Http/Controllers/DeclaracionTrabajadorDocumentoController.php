@@ -13,7 +13,7 @@ class DeclaracionTrabajadorDocumentoController extends Controller
 
     public function todos(int $declaracion): BinaryFileResponse
     {
-        $declaracion = DeclaracionTrabajador::withoutGlobalScopes()->findOrFail($declaracion);
+        $declaracion = DeclaracionTrabajador::query()->findOrFail($declaracion);
         $this->authorize('descargar', $declaracion);
         $tipos = ['ANEXO_1', 'ANEXO_2', 'ANEXO_3'];
         $zipPath = tempnam(sys_get_temp_dir(), 'dj-').'.zip';
@@ -25,7 +25,7 @@ class DeclaracionTrabajadorDocumentoController extends Controller
 
     private function respuesta(int $declaracionId, string $tipo, bool $descargar): BinaryFileResponse
     {
-        $declaracion = DeclaracionTrabajador::withoutGlobalScopes()->findOrFail($declaracionId);
+        $declaracion = DeclaracionTrabajador::query()->findOrFail($declaracionId);
         $this->authorize('descargar', $declaracion);
         abort_unless(in_array($tipo, ['ANEXO_1','ANEXO_2','ANEXO_3'], true), 404);
         $doc=$declaracion->documentos()->where('TipoDocumento',$tipo)->latest('GeneradoEn')->firstOrFail();
