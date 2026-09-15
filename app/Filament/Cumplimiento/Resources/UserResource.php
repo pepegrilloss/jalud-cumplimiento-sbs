@@ -37,7 +37,7 @@ class UserResource extends Resource
         $sedeId = auth()->user()?->getEffectiveSedeId();
 
         return parent::getEloquentQuery()->where(function (Builder $query) use ($sedeId): void {
-            $query->where('SedeID', $sedeId)->orWhereKey(auth()->id());
+            $query->where('SedeID', $sedeId)->orWhere('id', auth()->id());
         });
     }
 
