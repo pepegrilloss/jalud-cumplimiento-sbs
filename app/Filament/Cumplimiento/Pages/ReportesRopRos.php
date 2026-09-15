@@ -14,7 +14,7 @@ class ReportesRopRos extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-archive-box-arrow-down';
 
-    protected static ?string $navigationGroup = 'Cumplimiento';
+    protected static ?string $navigationGroup = 'Reportes';
 
     protected static ?string $navigationLabel = 'Reportes ROP y ROS';
 
@@ -22,7 +22,7 @@ class ReportesRopRos extends Page implements HasForms
 
     protected static ?string $slug = 'reportes-rop-ros';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 1;
 
     protected static string $view = 'filament.cumplimiento.pages.reportes-rop-ros';
 

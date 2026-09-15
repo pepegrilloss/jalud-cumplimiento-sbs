@@ -14,8 +14,9 @@ class RosCatalogoItemResource extends Resource
 {
     protected static ?string $model = RosCatalogoItem::class;
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static ?string $navigationGroup = 'Cumplimiento';
+    protected static ?string $navigationGroup = 'Catálogos y Mantenimiento';
     protected static ?string $navigationLabel = 'Catálogos ROS';
+    protected static ?int $navigationSort = 1;
     protected static ?string $slug = 'ros-catalogos';
     protected static ?string $modelLabel = 'ítem de catálogo ROS';
     protected static ?string $pluralModelLabel = 'Catálogos ROS';

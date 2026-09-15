@@ -20,6 +20,8 @@ class RosConfiguracionResource extends Resource
 
     protected static ?string $navigationGroup = 'Cumplimiento';
 
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $navigationLabel = 'Configuración SBS por sede';
 
     protected static ?string $slug = 'ros-configuracion-sedes';

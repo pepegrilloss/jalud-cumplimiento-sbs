@@ -53,7 +53,7 @@ class CumplimientoPanelProvider extends PanelProvider
                 PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
                 fn (): string => view('filament.cumplimiento.components.sede-activa')->render(),
             )
-            ->navigationGroups(['Declaraciones juradas', 'Cumplimiento', 'Administración'])
+            ->navigationGroups(['Declaraciones juradas', 'Cumplimiento', 'Catálogos y Mantenimiento', 'Reportes', 'Administración'])
             ->pages([SelectSede::class, ReportesRopRos::class])
             ->resources([DeclaracionTrabajadorResource::class, DeclaracionClienteResource::class, RopRegistroResource::class, RopCatalogoItemResource::class, RosCasoResource::class, RosCatalogoItemResource::class, RosConfiguracionResource::class, UserResource::class])
             ->databaseTransactions()

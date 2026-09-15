@@ -39,6 +39,8 @@ class RosCasoResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'CodigoInterno';
 
+    protected static ?int $navigationSort = 3;
+
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->puedeAccederACumplimientoSbs() ?? false;

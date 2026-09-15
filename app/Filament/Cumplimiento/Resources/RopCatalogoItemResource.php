@@ -16,7 +16,7 @@ class RopCatalogoItemResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-table-cells';
 
-    protected static ?string $navigationGroup = 'Cumplimiento';
+    protected static ?string $navigationGroup = 'Catálogos y Mantenimiento';
 
     protected static ?string $navigationLabel = 'Tablas de mantenimiento ROP';
 
