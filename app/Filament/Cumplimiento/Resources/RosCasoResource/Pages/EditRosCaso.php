@@ -12,7 +12,7 @@ class EditRosCaso extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [Actions\ViewAction::make(), ...$this->rosWorkflowActions()];
+        return [Actions\ViewAction::make()];
     }
 
     public function mount(int|string $record): void
