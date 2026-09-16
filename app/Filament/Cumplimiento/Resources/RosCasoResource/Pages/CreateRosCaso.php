@@ -16,6 +16,14 @@ class CreateRosCaso extends CreateRecord
         return static::$resource::getUrl('view', ['record' => $this->record]);
     }
 
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getCreateFormAction(),
+            $this->getCancelFormAction(),
+        ];
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['RopRegistroID'] = null;

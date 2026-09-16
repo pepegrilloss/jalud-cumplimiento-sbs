@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\RosCaso;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class RosCasoPolicy
@@ -39,7 +39,9 @@ class RosCasoPolicy
      */
     public function update(User $user, RosCaso $rosCaso): bool
     {
-        return $user->can('update_ros::caso');
+        return ! $rosCaso->Bloqueado
+            && ! in_array($rosCaso->Estado, [RosCaso::ESTADO_REPORTADO, RosCaso::ESTADO_DESCARTADO], true)
+            && $user->can('update_ros::caso');
     }
 
     /**

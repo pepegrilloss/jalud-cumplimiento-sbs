@@ -640,7 +640,7 @@ class RosCasoResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make()->visible(fn (RosCaso $record): bool => ! $record->Bloqueado),
+                Tables\Actions\EditAction::make()->visible(fn (RosCaso $record): bool => static::canEdit($record)),
             ])->bulkActions([]);
     }
 

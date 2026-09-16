@@ -16,7 +16,7 @@ class ViewRosCaso extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make()->visible(fn (): bool => !$this->record->Bloqueado),
+            Actions\EditAction::make()->visible(fn (): bool => RosCasoResource::canEdit($this->record)),
             ...$this->rosWorkflowActions(),
         ];
     }
