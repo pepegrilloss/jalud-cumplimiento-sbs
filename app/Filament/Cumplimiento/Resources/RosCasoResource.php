@@ -261,7 +261,10 @@ class RosCasoResource extends Resource
                             Forms\Components\DatePicker::make('FechaNacimiento')->label('18. Fecha de nacimiento')->native(false)->visible(fn (Get $get): bool => $get('TipoPersona') === 'NATURAL'),
                             Forms\Components\TextInput::make('Nacionalidad')->label('19. Nacionalidad')->visible(fn (Get $get): bool => $get('TipoPersona') === 'NATURAL'),
                             Forms\Components\TextInput::make('ProfesionOcupacion')->label('20. Profesión u ocupación')->visible(fn (Get $get): bool => $get('TipoPersona') === 'NATURAL'),
-                            Forms\Components\Toggle::make('EsPep')->label('20.a. ¿El reportado es un PEP?')->visible(fn (Get $get): bool => $get('TipoPersona') === 'NATURAL'),
+                            Forms\Components\Toggle::make('EsPep')
+                                ->label('20.a. ¿El reportado es un PEP?')
+                                ->default(false)
+                                ->visible(fn (Get $get): bool => $get('TipoPersona') === 'NATURAL'),
                             Forms\Components\Select::make('TipoDocumento')->label('21. Tipo de Documento de Identidad')->options(fn (): array => self::catalogo('TIPO_DOCUMENTO'))->searchable()->visible(fn (Get $get): bool => $get('TipoPersona') === 'NATURAL')->dehydrated(),
                             Forms\Components\TextInput::make('NumeroDocumento')->label(fn (Get $get): string => $get('TipoPersona') === 'JURIDICA' ? '47. Número de R.U.C.' : '22. N° de documento'),
                             Forms\Components\TextInput::make('PaisEmisionDocumento')->label('23. País de emisión del documento')->visible(fn (Get $get): bool => $get('TipoPersona') === 'NATURAL'),

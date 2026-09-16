@@ -13,7 +13,9 @@ class RosPersona extends Model
     use BelongsToSede, ResolvesRosCasoSede;
 
     protected $table = 'ros_personas';
+
     protected $primaryKey = 'RosPersonaID';
+
     protected $fillable = [
         'RosCasoID', 'SedeID', 'ClienteID', 'TipoPersona', 'CondicionParticipacion',
         'ApellidoPaterno', 'ApellidoMaterno', 'Nombres', 'RazonSocial', 'TipoDocumento',
@@ -45,8 +47,30 @@ class RosPersona extends Model
         'RepFechaNacimiento' => 'date',
     ];
 
-    public function caso(): BelongsTo { return $this->belongsTo(RosCaso::class, 'RosCasoID', 'RosCasoID'); }
-    public function cliente(): BelongsTo { return $this->belongsTo(Cliente::class, 'ClienteID', 'ClienteID'); }
-    public function personaRepresentada(): BelongsTo { return $this->belongsTo(self::class, 'RosPersonaRepresentadaID', 'RosPersonaID'); }
-    public function reportesPrevios(): HasMany { return $this->hasMany(RosReportePrevio::class, 'RosPersonaID', 'RosPersonaID'); }
+    protected static function booted(): void
+    {
+        static::creating(function (self $persona): void {
+            $persona->EsPep ??= false;
+        });
+    }
+
+    public function caso(): BelongsTo
+    {
+        return $this->belongsTo(RosCaso::class, 'RosCasoID', 'RosCasoID');
+    }
+
+    public function cliente(): BelongsTo
+    {
+        return $this->belongsTo(Cliente::class, 'ClienteID', 'ClienteID');
+    }
+
+    public function personaRepresentada(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'RosPersonaRepresentadaID', 'RosPersonaID');
+    }
+
+    public function reportesPrevios(): HasMany
+    {
+        return $this->hasMany(RosReportePrevio::class, 'RosPersonaID', 'RosPersonaID');
+    }
 }

@@ -8,6 +8,7 @@ use App\Services\Ros\RosWorkflowService;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
+use Illuminate\Validation\ValidationException;
 
 trait HasRosWorkflowActions
 {
@@ -83,7 +84,19 @@ trait HasRosWorkflowActions
 
     private function transicionar(string $estado, ?string $motivo = null, array $datos = []): void
     {
-        $caso = app(RosWorkflowService::class)->transicionar($this->record, $estado, $motivo, $datos);
+        try {
+            $caso = app(RosWorkflowService::class)->transicionar($this->record, $estado, $motivo, $datos);
+        } catch (ValidationException $exception) {
+            Notification::make()
+                ->danger()
+                ->title('No se puede completar esta acción')
+                ->body(collect($exception->errors())->flatten()->implode("\n"))
+                ->persistent()
+                ->send();
+
+            return;
+        }
+
         Notification::make()->success()->title('Estado actualizado')->body(RosCaso::estados()[$estado] ?? $estado)->send();
         $this->redirect(RosCasoResource::getUrl('view', ['record' => $caso]));
     }
