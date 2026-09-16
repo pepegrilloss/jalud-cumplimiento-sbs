@@ -3,7 +3,6 @@
 namespace App\Filament\Cumplimiento\Resources;
 
 use App\Filament\Cumplimiento\Resources\RosConfiguracionResource\Pages;
-use App\Models\RopCatalogoItem;
 use App\Models\RosConfiguracion;
 use App\Models\Sede;
 use Filament\Forms;
@@ -53,20 +52,16 @@ class RosConfiguracionResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Select::make('SedeID')->label('Sede de Jalud')
+            Forms\Components\Select::make('SedeID')->label('Sede')
                 ->options(fn (): array => Sede::query()->operativas()->whereKey(auth()->user()?->getEffectiveSedeId())->pluck('Nombre', 'SedeID')->all())
                 ->default(fn () => auth()->user()?->getEffectiveSedeId())
                 ->unique(ignoreRecord: true)->required()->disabled()->dehydrated(),
-            Forms\Components\TextInput::make('UmbralRop')->label('Umbral de ingreso al ROP')->numeric()->prefix('S/')->minValue(0)->required(),
-            Forms\Components\Select::make('TipoSujetoObligado')->label('Tipo de sujeto obligado (Tabla N.° 1 ROP)')
-                ->options(fn (): array => RopCatalogoItem::query()->where('Tipo', RopCatalogoItem::TIPO_SUJETO_OBLIGADO)->where('Activo', true)->orderBy('Orden')->pluck('Nombre', 'Nombre')->all())
-                ->searchable()->required(),
-            Forms\Components\TextInput::make('CodigoEmpresa')->label('Código de empresa SBS')->required()->maxLength(80),
-            Forms\Components\TextInput::make('CodigoOficialCumplimiento')->label('Código del oficial de cumplimiento')->required()->maxLength(80),
-            Forms\Components\TextInput::make('OficinaInformante')->label('Oficina informante')->required()->maxLength(180),
-            Forms\Components\TextInput::make('Departamento')->required()->maxLength(120),
-            Forms\Components\TextInput::make('Provincia')->required()->maxLength(120),
-            Forms\Components\TextInput::make('Distrito')->required()->maxLength(120),
+            Forms\Components\TextInput::make('UmbralRop')
+                ->label('Umbral de ingreso al ROP')
+                ->numeric()
+                ->prefix('S/')
+                ->minValue(0)
+                ->required(),
         ])->columns(2);
     }
 
@@ -74,10 +69,7 @@ class RosConfiguracionResource extends Resource
     {
         return $table->columns([
             Tables\Columns\TextColumn::make('SedeID')->label('Sede')->formatStateUsing(fn ($state): string => Sede::query()->find($state)?->Nombre ?? "Sede #{$state}"),
-            Tables\Columns\TextColumn::make('UmbralRop')->label('Umbral ROP')->money('PEN')->sortable(),
-            Tables\Columns\TextColumn::make('CodigoEmpresa')->label('Código SBS')->searchable(),
-            Tables\Columns\TextColumn::make('CodigoOficialCumplimiento')->label('Oficial')->searchable(),
-            Tables\Columns\TextColumn::make('OficinaInformante')->label('Oficina')->searchable(),
+            Tables\Columns\TextColumn::make('UmbralRop')->label('Umbral de ingreso al ROP')->money('PEN')->sortable(),
         ])->actions([Tables\Actions\EditAction::make()]);
     }
 

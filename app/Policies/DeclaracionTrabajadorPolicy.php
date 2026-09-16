@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\DeclaracionTrabajador;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class DeclaracionTrabajadorPolicy
@@ -39,7 +39,23 @@ class DeclaracionTrabajadorPolicy
      */
     public function update(User $user, DeclaracionTrabajador $declaracionTrabajador): bool
     {
-        return $user->can('update_declaracion::trabajador');
+        return $declaracionTrabajador->Estado !== 'FINALIZADO'
+            && ($user->hasRole('super_admin') || $user->can('update_declaracion::trabajador'));
+    }
+
+    public function finalizar(User $user, DeclaracionTrabajador $declaracionTrabajador): bool
+    {
+        return $user->hasRole('super_admin') || $user->can('finalizar_declaraciones_trabajador');
+    }
+
+    public function generarPdf(User $user, DeclaracionTrabajador $declaracionTrabajador): bool
+    {
+        return $user->hasRole('super_admin') || $user->can('generar_pdf_declaraciones');
+    }
+
+    public function nuevaVersion(User $user, DeclaracionTrabajador $declaracionTrabajador): bool
+    {
+        return $user->hasRole('super_admin') || $user->can('versionar_declaraciones_trabajador');
     }
 
     /**
