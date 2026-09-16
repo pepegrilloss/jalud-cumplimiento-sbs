@@ -396,6 +396,7 @@ class RosCasoResource extends Resource
             ])->columns(3),
             Forms\Components\Repeater::make('operaciones')
                 ->relationship()->label('92–93. Productos o servicios utilizados y detalle')
+                ->addActionLabel('Agregar operación')
                 ->schema([
                     Forms\Components\Hidden::make('ClienteID'),
                     Forms\Components\Hidden::make('CreditoID'),
