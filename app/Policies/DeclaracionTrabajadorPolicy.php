@@ -53,6 +53,11 @@ class DeclaracionTrabajadorPolicy
         return $user->hasRole('super_admin') || $user->can('generar_pdf_declaraciones');
     }
 
+    public function descargar(User $user, DeclaracionTrabajador $declaracionTrabajador): bool
+    {
+        return $user->hasRole('super_admin') || $user->can('view_declaracion::trabajador');
+    }
+
     public function nuevaVersion(User $user, DeclaracionTrabajador $declaracionTrabajador): bool
     {
         return $user->hasRole('super_admin') || $user->can('versionar_declaraciones_trabajador');

@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\DeclaracionCliente;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class DeclaracionClientePolicy
@@ -39,7 +39,28 @@ class DeclaracionClientePolicy
      */
     public function update(User $user, DeclaracionCliente $declaracionCliente): bool
     {
-        return $user->can('update_declaracion::cliente');
+        return $declaracionCliente->Estado !== 'FINALIZADO'
+            && ($user->hasRole('super_admin') || $user->can('update_declaracion::cliente'));
+    }
+
+    public function finalizar(User $user, DeclaracionCliente $declaracionCliente): bool
+    {
+        return $user->hasRole('super_admin') || $user->can('finalizar_declaraciones_cliente');
+    }
+
+    public function generarPdf(User $user, DeclaracionCliente $declaracionCliente): bool
+    {
+        return $user->hasRole('super_admin') || $user->can('generar_pdf_declaraciones');
+    }
+
+    public function descargar(User $user, DeclaracionCliente $declaracionCliente): bool
+    {
+        return $user->hasRole('super_admin') || $user->can('view_declaracion::cliente');
+    }
+
+    public function nuevaVersion(User $user, DeclaracionCliente $declaracionCliente): bool
+    {
+        return $user->hasRole('super_admin') || $user->can('versionar_declaraciones_cliente');
     }
 
     /**

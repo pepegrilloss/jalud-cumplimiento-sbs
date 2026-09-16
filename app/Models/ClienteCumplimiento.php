@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Traits\BelongsToSede;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /** Local, auditable compliance snapshot of a Jalud client. */
@@ -12,10 +11,15 @@ class ClienteCumplimiento extends \Illuminate\Database\Eloquent\Model
     use BelongsToSede;
 
     protected $table = 'dj_clientes';
+
     protected $primaryKey = 'ClienteID';
+
     public $incrementing = false;
+
     protected $keyType = 'int';
+
     protected $guarded = ['ClienteID'];
+
     protected $casts = ['Activo' => 'boolean', 'SincronizadoEn' => 'datetime'];
 
     public function declaraciones(): HasMany
@@ -28,6 +32,9 @@ class ClienteCumplimiento extends \Illuminate\Database\Eloquent\Model
     {
         $cliente = self::withoutGlobalScopes()->firstOrNew(['ClienteID' => $origen->getKey()]);
         $esNuevo = ! $cliente->exists;
+
+        // ClienteID is the immutable source identifier from Jalud, not an auto-increment key.
+        $cliente->ClienteID = $origen->getKey();
 
         $cliente->fill([
             'SedeID' => $origen->SedeID,
