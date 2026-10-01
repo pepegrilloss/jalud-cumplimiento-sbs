@@ -21,6 +21,21 @@ class RosWorkflowService
         return in_array($destino, self::TRANSICIONES[$caso->Estado] ?? [], true);
     }
 
+    public function reporteCompleto(RosCaso $caso): bool
+    {
+        if (! in_array($caso->Estado, [RosCaso::ESTADO_APROBADO, RosCaso::ESTADO_REPORTADO], true)) {
+            return false;
+        }
+
+        try {
+            $this->validar($caso, RosCaso::ESTADO_APROBADO, null, []);
+
+            return true;
+        } catch (ValidationException) {
+            return false;
+        }
+    }
+
     public function transicionar(RosCaso $caso, string $destino, ?string $motivo = null, array $datos = []): RosCaso
     {
         if (!$this->puedeTransicionar($caso, $destino)) {

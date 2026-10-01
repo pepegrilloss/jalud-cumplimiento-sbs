@@ -19,7 +19,9 @@ trait HasRosWorkflowActions
                 ->label('Vista previa PDF (interna)')
                 ->icon('heroicon-o-document-arrow-down')
                 ->color('gray')
-                ->url(fn (): string => route('ros.reporte.pdf', $this->record)),
+                ->visible(fn (): bool => app(RosWorkflowService::class)->reporteCompleto($this->record))
+                ->url(fn (): string => route('ros.reporte.pdf', $this->record))
+                ->openUrlInNewTab(),
             Actions\Action::make('excel')
                 ->label('Descargar Excel')
                 ->icon('heroicon-o-table-cells')

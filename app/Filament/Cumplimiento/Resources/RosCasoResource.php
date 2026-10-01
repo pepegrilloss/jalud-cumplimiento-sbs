@@ -13,6 +13,7 @@ use App\Models\Sede;
 use App\Models\Trabajador;
 use App\Models\Zona;
 use App\Services\Ros\RosPrefillService;
+use App\Services\Ros\RosWorkflowService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -702,6 +703,7 @@ class RosCasoResource extends Resource
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make()->visible(fn (RosCaso $record): bool => static::canEdit($record)),
                 Tables\Actions\Action::make('pdf')->label('Vista previa PDF')->icon('heroicon-o-document-text')
+                    ->visible(fn (RosCaso $record): bool => app(RosWorkflowService::class)->reporteCompleto($record))
                     ->url(fn (RosCaso $record): string => route('ros.reporte.pdf', $record))
                     ->openUrlInNewTab(),
             ])->bulkActions([]);

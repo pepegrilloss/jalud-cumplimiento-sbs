@@ -56,6 +56,7 @@ class ViewRopRegistro extends ViewRecord
                 ->visible(fn (): bool => app(RopCompletenessService::class)->estaCompleto($this->record))
                 ->url(fn (): string => route('rop.reporte.excel', $this->record)),
             Actions\Action::make('pdf')->label('Vista previa PDF')->icon('heroicon-o-document-text')
+                ->visible(fn (): bool => app(RopCompletenessService::class)->estaCompleto($this->record))
                 ->url(fn (): string => route('rop.reporte.pdf', $this->record))
                 ->openUrlInNewTab(),
             Actions\Action::make('generar_ros')->label('Generar ROS')->icon('heroicon-o-shield-exclamation')->color('danger')

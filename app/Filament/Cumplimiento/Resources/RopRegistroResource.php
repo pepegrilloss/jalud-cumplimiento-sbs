@@ -360,6 +360,7 @@ class RopRegistroResource extends Resource
                 self::revisarCalificarAction(),
                 self::generarRosAction(),
                 Tables\Actions\Action::make('pdf')->label('PDF')->icon('heroicon-o-document-text')
+                    ->visible(fn (RopRegistro $record): bool => app(RopCompletenessService::class)->estaCompleto($record))
                     ->url(fn (RopRegistro $record): string => route('rop.reporte.pdf', $record))
                     ->openUrlInNewTab(),
                 Tables\Actions\Action::make('excel')->label('Excel')->icon('heroicon-o-table-cells')

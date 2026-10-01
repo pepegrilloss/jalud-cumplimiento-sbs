@@ -8,12 +8,13 @@ use App\Models\RosPersona;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xls;
 
 class RosExcelExportService
 {
-    public function generar(RosCaso $caso): string
+    public function libro(RosCaso $caso): Spreadsheet
     {
         $caso->loadMissing([
             'personas.reportesPrevios', 'operaciones', 'senalesAlerta', 'tipologias', 'adjuntos',
@@ -22,7 +23,7 @@ class RosExcelExportService
         $libro = IOFactory::load(resource_path('templates/ros/modelo-ros-sbs.xls'));
         $hoja = $libro->getSheetByName('FORMATO');
 
-        if (!$hoja) {
+        if (! $hoja) {
             throw new \RuntimeException('La plantilla oficial ROS no contiene la hoja FORMATO.');
         }
 
@@ -30,6 +31,13 @@ class RosExcelExportService
         $this->llenarReporte($hoja, $caso);
         $libro->setActiveSheetIndex($libro->getIndex($hoja));
         $hoja->setSelectedCell('A1');
+
+        return $libro;
+    }
+
+    public function generar(RosCaso $caso): string
+    {
+        $libro = $this->libro($caso);
 
         $directorio = 'cumplimiento-sbs/reportes-temporales';
         Storage::disk('local')->makeDirectory($directorio);
@@ -303,7 +311,7 @@ class RosExcelExportService
             $senales = $caso->senalesAlerta->where('Tipo', $tipo)->values();
             foreach ($filas as $indice => $fila) {
                 $senal = $senales->get($indice);
-                if (!$senal) {
+                if (! $senal) {
                     continue;
                 }
                 $catalogoTipo = $tipo === 'OPERACION' ? 'SENAL_OPERACION' : 'SENAL_REPORTADO';
@@ -376,7 +384,7 @@ class RosExcelExportService
 
     private function fechaPartes(Worksheet $hoja, $fecha, array $celdas): void
     {
-        if (!$fecha) {
+        if (! $fecha) {
             return;
         }
 
@@ -411,7 +419,7 @@ class RosExcelExportService
     private function prefijoX(Worksheet $hoja, string $celda): void
     {
         $actual = trim((string) $hoja->getCell($celda)->getValue());
-        if ($actual !== '' && !str_starts_with($actual, 'X ')) {
+        if ($actual !== '' && ! str_starts_with($actual, 'X ')) {
             $hoja->setCellValue($celda, 'X '.$actual);
         }
     }

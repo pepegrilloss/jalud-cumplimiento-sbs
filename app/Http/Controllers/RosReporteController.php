@@ -3,27 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Models\RosCaso;
+use App\Services\Cumplimiento\PlantillaExcelPdfService;
 use App\Services\Ros\RosExcelExportService;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Http\Response;
+use App\Services\Ros\RosWorkflowService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class RosReporteController extends Controller
 {
-    public function pdf(int $caso): Response
-    {
+    public function pdf(
+        int $caso,
+        RosExcelExportService $exportador,
+        PlantillaExcelPdfService $pdfExportador,
+        RosWorkflowService $workflow,
+    ): BinaryFileResponse {
         $caso = $this->caso($caso);
         $this->authorize('view', $caso);
-        $caso->load(['sede', 'zona', 'cliente', 'personas.reportesPrevios', 'operaciones', 'senalesAlerta', 'tipologias', 'adjuntos', 'reportesPrevios', 'transiciones.usuario']);
+        abort_unless($workflow->reporteCompleto($caso), 404);
 
-        $contenido = Pdf::loadView('pdf.ros.reporte', compact('caso'))
-            ->setPaper('a4')
-            ->output();
+        $ruta = $pdfExportador->generar($exportador->libro($caso), $caso->CodigoInterno);
 
-        return response($contenido, 200, [
+        return response()->file($ruta, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="'.$caso->CodigoInterno.'.pdf"',
-        ]);
+        ])->deleteFileAfterSend(true);
     }
 
     public function excel(int $caso, RosExcelExportService $servicio): BinaryFileResponse
