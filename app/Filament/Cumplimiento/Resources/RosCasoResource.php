@@ -221,7 +221,7 @@ class RosCasoResource extends Resource
             Forms\Components\Section::make('SECCIÓN II · Información de la empresa que elabora el reporte')->schema([
                 Forms\Components\Hidden::make('EnteSupervisor')->default('SBS/UIF-PERU'),
                 Forms\Components\Placeholder::make('ente_supervisor_ros')->label('7. Ente Supervisor')->content('SBS/UIF-Perú · El formato indica no llenar este numeral.'),
-                Forms\Components\Select::make('TipoSujetoObligado')->label('8. Tipo de Sujeto Obligado')->options(fn (): array => self::catalogo('TIPO_SUJETO'))->searchable()->required(),
+                Forms\Components\Select::make('TipoSujetoObligado')->label('8. Tipo de Sujeto Obligado')->options(fn (): array => self::opcionesTipoSujeto())->searchable()->required(),
                 Forms\Components\TextInput::make('CodigoEmpresa')->label('9. Código de la empresa SBS'),
                 Forms\Components\TextInput::make('CodigoOficialCumplimiento')->label('10. Código Oficial de Cumplimiento'),
                 Forms\Components\TextInput::make('OficinaInformante')->label('11. Sucursal, agencia u oficina que informó'),
@@ -639,12 +639,71 @@ class RosCasoResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('Estado')->options(RosCaso::estados()),
+                Tables\Filters\SelectFilter::make('OrigenRos')->label('Origen')->options([
+                    RosCaso::ORIGEN_ROP => 'Desde ROP', RosCaso::ORIGEN_DIRECTO => 'Directo desde JALUD',
+                ]),
                 Tables\Filters\SelectFilter::make('ZonaID')->label('Zona')->options(Zona::query()->where('Activo', true)->orderBy('Nombre')->pluck('Nombre', 'ZonaID')),
                 Tables\Filters\SelectFilter::make('SedeID')->label('Sede')->options(Sede::query()->where('Activo', true)->orderBy('Nombre')->pluck('Nombre', 'SedeID'))->visible(fn (): bool => auth()->user()?->can('ver_todos_los_casos_sbs') ?? false),
+                Tables\Filters\Filter::make('fecha_reporte')->label('Fecha del reporte')->form([
+                    Forms\Components\DatePicker::make('desde')->label('Desde'),
+                    Forms\Components\DatePicker::make('hasta')->label('Hasta'),
+                ])->columns(2)->query(fn (Builder $query, array $data) => $query
+                    ->when($data['desde'] ?? null, fn (Builder $q, $fecha) => $q->whereDate('FechaReporte', '>=', $fecha))
+                    ->when($data['hasta'] ?? null, fn (Builder $q, $fecha) => $q->whereDate('FechaReporte', '<=', $fecha))),
+                Tables\Filters\Filter::make('fecha_operacion')->label('Fecha de la operación')->form([
+                    Forms\Components\DatePicker::make('desde')->label('Desde'),
+                    Forms\Components\DatePicker::make('hasta')->label('Hasta'),
+                ])->columns(2)->query(fn (Builder $query, array $data) => $query
+                    ->when($data['desde'] ?? null, fn (Builder $q, $fecha) => $q->whereDate('FechaOperacionDesde', '>=', $fecha))
+                    ->when($data['hasta'] ?? null, fn (Builder $q, $fecha) => $q->whereDate('FechaOperacionHasta', '<=', $fecha))),
+                Tables\Filters\Filter::make('monto')->label('Monto total')->form([
+                    Forms\Components\TextInput::make('minimo')->label('Desde')->numeric(),
+                    Forms\Components\TextInput::make('maximo')->label('Hasta')->numeric(),
+                ])->columns(2)->query(fn (Builder $query, array $data) => $query
+                    ->when($data['minimo'] ?? null, fn (Builder $q, $monto) => $q->where('MontoTotal', '>=', $monto))
+                    ->when($data['maximo'] ?? null, fn (Builder $q, $monto) => $q->where('MontoTotal', '<=', $monto))),
+                Tables\Filters\Filter::make('referencias')->label('Caso, persona, documento o crédito')->form([
+                    Forms\Components\TextInput::make('texto')->label('Buscar referencia'),
+                ])->query(fn (Builder $query, array $data) => $query->when($data['texto'] ?? null, function (Builder $q, string $texto): void {
+                    $busqueda = "%{$texto}%";
+                    // Cliente y crédito están en la conexión de solo lectura JALUD; buscamos
+                    // sus IDs allí y filtramos el ROS local sin subconsultas entre conexiones.
+                    $clienteIds = Cliente::query()->where(fn (Builder $cliente) => $cliente
+                        ->where('NombresApellidos', 'like', $busqueda)
+                        ->orWhere('DNI', 'like', $busqueda))
+                        ->limit(1000)->pluck('ClienteID');
+                    $creditoIds = Credito::withoutGlobalScopes()
+                        ->whereHas('proposicion', fn (Builder $proposicion) => $proposicion->where('CodigoCredito', 'like', $busqueda))
+                        ->limit(1000)->pluck('CreditoID');
+                    $trabajadorIds = Trabajador::query()->where(fn (Builder $trabajador) => $trabajador
+                        ->where('Nombres', 'like', $busqueda)
+                        ->orWhere('ApellidoPaterno', 'like', $busqueda)
+                        ->orWhere('ApellidoMaterno', 'like', $busqueda)
+                        ->orWhere('NumeroDocumento', 'like', $busqueda))
+                        ->limit(1000)->pluck('TrabajadorID');
+
+                    $q->where(function (Builder $filtro) use ($busqueda, $clienteIds, $trabajadorIds, $creditoIds): void {
+                        $filtro->where('CodigoInterno', 'like', $busqueda)
+                            ->orWhere('NumeroReporte', 'like', $busqueda)
+                            ->orWhere('PagoID', 'like', $busqueda)
+                            ->orWhereHas('personas', fn (Builder $persona) => $persona
+                                ->where('Nombres', 'like', $busqueda)
+                                ->orWhere('ApellidoPaterno', 'like', $busqueda)
+                                ->orWhere('ApellidoMaterno', 'like', $busqueda)
+                                ->orWhere('RazonSocial', 'like', $busqueda)
+                                ->orWhere('NumeroDocumento', 'like', $busqueda))
+                            ->orWhereIn('ClienteID', $clienteIds)
+                            ->orWhereIn('TrabajadorID', $trabajadorIds)
+                            ->orWhereIn('CreditoID', $creditoIds);
+                    });
+                })),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make()->visible(fn (RosCaso $record): bool => static::canEdit($record)),
+                Tables\Actions\Action::make('pdf')->label('Vista previa PDF')->icon('heroicon-o-document-text')
+                    ->url(fn (RosCaso $record): string => route('ros.reporte.pdf', $record))
+                    ->openUrlInNewTab(),
             ])->bulkActions([]);
     }
 
@@ -660,6 +719,21 @@ class RosCasoResource extends Resource
 
     public static function getRelations(): array
     {
-        return [RelationManagers\AuditoriasRelationManager::class];
+        return [RelationManagers\RosAdjuntosRelationManager::class, RelationManagers\AuditoriasRelationManager::class];
+    }
+
+    private static function opcionesTipoSujeto(): array
+    {
+        $opciones = self::catalogo('TIPO_SUJETO');
+
+        foreach ($opciones as $codigo => $nombre) {
+            $normalizado = \Illuminate\Support\Str::ascii(mb_strtolower($nombre));
+
+            if (preg_match('/empresa(s)? (del|de) sistema financiero|empresa(s)? financiera(s)?/', $normalizado)) {
+                $opciones[$codigo] = 'Casa de préstamos';
+            }
+        }
+
+        return $opciones;
     }
 }

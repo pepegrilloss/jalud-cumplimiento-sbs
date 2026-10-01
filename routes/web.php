@@ -4,6 +4,7 @@ use App\Http\Controllers\DeclaracionClienteDocumentoController;
 use App\Http\Controllers\DeclaracionTrabajadorDocumentoController;
 use App\Http\Controllers\ReporteCumplimientoController;
 use App\Http\Controllers\RopReporteController;
+use App\Http\Controllers\RopAdjuntoController;
 use App\Http\Controllers\RosAdjuntoController;
 use App\Http\Controllers\RosReporteController;
 use App\Http\Controllers\TrabajadorArchivoController;
@@ -30,7 +31,10 @@ Route::middleware(['auth', EnsureSedeIsSelected::class])->prefix('cumplimiento/r
 });
 
 Route::middleware(['auth', EnsureSedeIsSelected::class])->prefix('cumplimiento/rop')->name('rop.')->group(function (): void {
+    Route::get('{registro}/reporte.pdf', [RopReporteController::class, 'pdf'])->name('reporte.pdf');
     Route::get('{registro}/reporte.xlsx', [RopReporteController::class, 'excel'])->name('reporte.excel');
+    Route::get('adjuntos/{adjunto}/ver', [RopAdjuntoController::class, 'ver'])->name('adjuntos.ver');
+    Route::get('adjuntos/{adjunto}/descargar', [RopAdjuntoController::class, 'descargar'])->name('adjuntos.descargar');
 });
 
 Route::middleware(['auth', EnsureSedeIsSelected::class])->prefix('cumplimiento/reportes')->name('cumplimiento.reportes.')->group(function (): void {

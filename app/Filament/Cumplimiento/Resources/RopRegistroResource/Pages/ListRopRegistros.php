@@ -10,6 +10,7 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Validation\ValidationException;
 
 class ListRopRegistros extends ListRecords
 {
@@ -47,13 +48,46 @@ class ListRopRegistros extends ListRecords
                 ->color('warning')
                 ->visible(fn (): bool => auth()->user()?->can('cerrar_periodo_rop') ?? false)
                 ->form([
-                    Forms\Components\DatePicker::make('Periodo')->label('Mes a cerrar')->default(now()->startOfMonth())->required()->native(false),
+                    Forms\Components\DatePicker::make('Periodo')->label('Mes a cerrar')->helperText('Primero se sincronizan los créditos que corresponden al mes. No se cerrará mientras existan ROP pendientes de completar o calificar.')
+                        ->default(now()->startOfMonth())->required()->native(false),
                 ])
+                ->modalDescription('El cierre registra fecha y usuario, impide nuevos ingresos al período y bloquea la edición de sus ROP. La operación no se puede revertir desde esta pantalla.')
                 ->requiresConfirmation()
                 ->action(function (array $data): void {
                     $sedeId = (int) auth()->user()?->getEffectiveSedeId();
-                    app(RopPeriodService::class)->cerrar($sedeId, $data['Periodo']);
-                    Notification::make()->success()->title('Período ROP cerrado')->send();
+                    try {
+                        $periodo = app(RopPeriodService::class)->cerrar($sedeId, $data['Periodo']);
+                    } catch (ValidationException $exception) {
+                        Notification::make()->danger()
+                            ->title('No se pudo cerrar el período')
+                            ->body(collect($exception->errors())->flatten()->first() ?? 'Revise los ROP pendientes antes de cerrar.')
+                            ->persistent()->send();
+
+                        return;
+                    }
+
+                    if ($periodo->yaEstabaCerrado) {
+                        Notification::make()->info()
+                            ->title('El período ya estaba cerrado')
+                            ->body('No se realizaron cambios. Período: '.$periodo->periodo->Periodo->format('m/Y').'.')
+                            ->send();
+
+                        return;
+                    }
+
+                    if ($periodo->pendientes > 0) {
+                        Notification::make()->warning()
+                            ->title('El período todavía no se puede cerrar')
+                            ->body("Se sincronizaron {$periodo->ropCreadosDuranteCierre} nuevos ROP y quedan {$periodo->pendientes} pendientes. Completa y califica esos registros; luego vuelve a cerrar el período.")
+                            ->persistent()->send();
+
+                        return;
+                    }
+
+                    Notification::make()->success()
+                        ->title('Período ROP cerrado')
+                        ->body('Período: '.$periodo->periodo->Periodo->format('m/Y').'. Los ROP del mes quedaron bloqueados para edición y no se admitirán nuevos registros.')
+                        ->send();
                 }),
         ];
     }

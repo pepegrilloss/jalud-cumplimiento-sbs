@@ -13,36 +13,54 @@ class RopPeriodService
     public function __construct(
         private readonly RopDetectionService $detector,
         private readonly RopAuditService $audit,
+        private readonly RopCompletenessService $completeness,
     ) {}
 
-    public function cerrar(int $sedeId, string $periodo): RopPeriodo
+    public function cerrar(int $sedeId, string $periodo): RopPeriodCloseResult
     {
         $mes = CarbonImmutable::parse($periodo)->startOfMonth();
-        $this->detector->detectar($mes, $mes->endOfMonth(), $sedeId);
+        $consultaPeriodo = fn () => RopPeriodo::withoutGlobalScopes()
+            ->where('SedeID', $sedeId)
+            ->whereDate('Periodo', $mes->toDateString());
 
-        return DB::transaction(function () use ($sedeId, $mes): RopPeriodo {
+        $periodoExistente = $consultaPeriodo()->first();
+
+        if ($periodoExistente?->Estado === RopPeriodo::ESTADO_CERRADO) {
+            return new RopPeriodCloseResult($periodoExistente, 0, 0, true);
+        }
+
+        // La sincronización se confirma aunque el cierre se rechace por pendientes, para que
+        // esos ROP aparezcan en la bandeja y se puedan completar antes de volver a cerrar.
+        $deteccion = $this->detector->detectar($mes, $mes->endOfMonth(), $sedeId);
+
+        if ($deteccion->sedesSinConfiguracion > 0) {
+            throw ValidationException::withMessages(['Periodo' => 'No se puede cerrar: configure primero el umbral ROP de esta sede.']);
+        }
+
+        return DB::transaction(function () use ($sedeId, $mes, $consultaPeriodo, $deteccion): RopPeriodCloseResult {
+            $registroPeriodo = $consultaPeriodo()->firstOrCreate(
+                ['SedeID' => $sedeId, 'Periodo' => $mes->toDateString()],
+                ['Estado' => RopPeriodo::ESTADO_ABIERTO],
+            );
             $registroPeriodo = RopPeriodo::withoutGlobalScopes()
-                ->where('SedeID', $sedeId)
-                ->whereDate('Periodo', $mes->toDateString())
+                ->whereKey($registroPeriodo->getKey())
                 ->lockForUpdate()
-                ->first();
-            $registroPeriodo ??= RopPeriodo::withoutGlobalScopes()->create([
-                'SedeID' => $sedeId,
-                'Periodo' => $mes->toDateString(),
-                'Estado' => RopPeriodo::ESTADO_ABIERTO,
-            ]);
+                ->firstOrFail();
 
             if ($registroPeriodo->Estado === RopPeriodo::ESTADO_CERRADO) {
-                return $registroPeriodo;
+                return new RopPeriodCloseResult($registroPeriodo, 0, $deteccion->creados, true);
             }
 
-            $pendientes = RopRegistro::withoutGlobalScopes()
+            $registrosPeriodo = RopRegistro::withoutGlobalScopes()
                 ->where('RopPeriodoID', $registroPeriodo->RopPeriodoID)
-                ->where('Estado', RopRegistro::ESTADO_PENDIENTE)
-                ->count();
+                ->get();
+            $pendientes = $registrosPeriodo->filter(fn (RopRegistro $registro): bool =>
+                $registro->Estado === RopRegistro::ESTADO_PENDIENTE
+                || ! $this->completeness->estaCompleto($registro)
+            )->count();
 
             if ($pendientes > 0) {
-                throw ValidationException::withMessages(['Periodo' => "No se puede cerrar: quedan {$pendientes} ROP pendientes de calificación."]);
+                return new RopPeriodCloseResult($registroPeriodo, $pendientes, $deteccion->creados);
             }
 
             $anteriores = $registroPeriodo->only(['Estado', 'CerradoPorID', 'CerradoEn']);
@@ -60,7 +78,7 @@ class RopPeriodService
                     nuevos: ['Periodo' => $mes->format('Y-m'), 'EstadoPeriodo' => RopPeriodo::ESTADO_CERRADO],
                 ), 200, 'RopRegistroID');
 
-            return $registroPeriodo->refresh();
+            return new RopPeriodCloseResult($registroPeriodo->refresh(), 0, $deteccion->creados);
         });
     }
 }

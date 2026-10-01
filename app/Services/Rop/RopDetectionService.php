@@ -78,23 +78,22 @@ class RopDetectionService
                             ?? $credito->proposicion->FechaDesembolso
                             ?? $credito->proposicion->FechaPropuesta;
                         $mes = CarbonImmutable::parse($fecha)->startOfMonth();
-                        $periodo = RopPeriodo::withoutGlobalScopes()
-                            ->where('SedeID', $configuracion->SedeID)
-                            ->whereDate('Periodo', $mes->toDateString())
-                            ->first();
-                        $periodo ??= RopPeriodo::withoutGlobalScopes()->create([
-                            'SedeID' => $configuracion->SedeID,
-                            'Periodo' => $mes->toDateString(),
-                            'Estado' => RopPeriodo::ESTADO_ABIERTO,
-                        ]);
+                        DB::transaction(function () use ($credito, $configuracion, $fecha, $mes, $monto, $origenTipo, $origenId, &$creados, &$duplicados, &$cerrados): void {
+                            $periodo = RopPeriodo::withoutGlobalScopes()->firstOrCreate(
+                                ['SedeID' => $configuracion->SedeID, 'Periodo' => $mes->toDateString()],
+                                ['Estado' => RopPeriodo::ESTADO_ABIERTO],
+                            );
+                            $periodo = RopPeriodo::withoutGlobalScopes()
+                                ->whereKey($periodo->getKey())
+                                ->lockForUpdate()
+                                ->firstOrFail();
 
-                        if ($periodo->Estado === RopPeriodo::ESTADO_CERRADO) {
-                            $cerrados++;
+                            if ($periodo->Estado === RopPeriodo::ESTADO_CERRADO) {
+                                $cerrados++;
 
-                            continue;
-                        }
+                                return;
+                            }
 
-                        DB::transaction(function () use ($credito, $configuracion, $periodo, $fecha, $mes, $monto, $origenTipo, $origenId, &$creados, &$duplicados): void {
                             $snapshot = $this->snapshots->crear($credito, $configuracion);
                             $registro = RopRegistro::withoutGlobalScopes()->firstOrCreate(
                                 ['OrigenTipo' => $origenTipo, 'OrigenID' => $origenId],

@@ -73,7 +73,7 @@ class RopRegistroResource extends Resource
                 Forms\Components\TextInput::make('DatosRegulatorios.codigo_sujeto_obligado')->label('4. Código del sujeto obligado')->required(),
                 Forms\Components\TextInput::make('DatosRegulatorios.codigo_oficial_cumplimiento')->label('5. Código del Oficial de Cumplimiento')->required(),
                 Forms\Components\Select::make('DatosRegulatorios.tipo_sujeto_obligado')->label('6. Tipo de sujeto obligado (Tabla N.° 1)')
-                    ->options(fn (): array => RopCatalogoItem::opciones(RopCatalogoItem::TIPO_SUJETO_OBLIGADO))->searchable()->required(),
+                    ->options(fn (): array => self::opcionesTipoSujeto())->searchable()->required(),
             ])->columns(3),
             Forms\Components\Section::make('SECCIÓN II · Información de la operación')->schema([
                 Forms\Components\TextInput::make('Monto')->label('7. Monto total')->numeric()->prefix('S/')->disabled(),
@@ -321,6 +321,9 @@ class RopRegistroResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('Estado')->options(RopRegistro::estados()),
                 Tables\Filters\SelectFilter::make('Calificacion')->options(RopRegistro::calificaciones()),
+                Tables\Filters\SelectFilter::make('Moneda')->options(['PEN' => 'Soles', 'USD' => 'Dólares', 'EUR' => 'Euros']),
+                Tables\Filters\SelectFilter::make('ZonaID')->label('Zona')->options(fn (): array => \App\Models\Zona::query()
+                    ->where('Activo', true)->orderBy('Nombre')->pluck('Nombre', 'ZonaID')->all()),
                 Tables\Filters\Filter::make('periodo')->label('Período')->form([
                     Forms\Components\DatePicker::make('mes')->label('Mes')->native(false),
                 ])->query(fn (Builder $query, array $data) => $query
@@ -356,6 +359,9 @@ class RopRegistroResource extends Resource
                     ->visible(fn (RopRegistro $record): bool => (auth()->user()?->can('completar_rop') ?? false) && $record->periodo?->Estado !== 'CERRADO'),
                 self::revisarCalificarAction(),
                 self::generarRosAction(),
+                Tables\Actions\Action::make('pdf')->label('PDF')->icon('heroicon-o-document-text')
+                    ->url(fn (RopRegistro $record): string => route('rop.reporte.pdf', $record))
+                    ->openUrlInNewTab(),
                 Tables\Actions\Action::make('excel')->label('Excel')->icon('heroicon-o-table-cells')
                     ->visible(fn (RopRegistro $record): bool => app(RopCompletenessService::class)->estaCompleto($record))
                     ->url(fn (RopRegistro $record): string => route('rop.reporte.excel', $record)),
@@ -446,6 +452,21 @@ class RopRegistroResource extends Resource
 
     public static function getRelations(): array
     {
-        return [RelationManagers\AuditoriasRelationManager::class];
+        return [RelationManagers\AdjuntosRelationManager::class, RelationManagers\AuditoriasRelationManager::class];
+    }
+
+    private static function opcionesTipoSujeto(): array
+    {
+        $opciones = RopCatalogoItem::opciones(RopCatalogoItem::TIPO_SUJETO_OBLIGADO);
+
+        foreach ($opciones as $codigo => $nombre) {
+            $normalizado = \Illuminate\Support\Str::ascii(mb_strtolower($nombre));
+
+            if (preg_match('/empresa(s)? (del|de) sistema financiero|empresa(s)? financiera(s)?/', $normalizado)) {
+                $opciones[$codigo] = 'Casa de préstamos';
+            }
+        }
+
+        return $opciones;
     }
 }

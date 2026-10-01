@@ -122,5 +122,20 @@
         <tbody>@foreach($caso->senalesAlerta as $senal)<tr><td>{{ $senal->Tipo }}</td><td>{{ $senal->Codigo }}</td></tr>@endforeach</tbody>
     </table>
     <table class="meta"><tr><td>98. Posibles tipologías</td><td>{{ $caso->tipologias->pluck('Codigo')->filter()->join(', ') }}</td></tr></table>
+
+    <h2>Evidencias adjuntas de uso interno</h2>
+    @if ($caso->adjuntos->isNotEmpty())
+        <table>
+            <thead><tr><th>Archivo</th><th>Descripción</th><th>Tipo</th><th>Fecha</th></tr></thead>
+            <tbody>
+            @foreach ($caso->adjuntos as $adjunto)
+                <tr><td>{{ $adjunto->NombreOriginal ?: basename($adjunto->RutaArchivo) }}</td><td>{{ $adjunto->Descripcion ?: '—' }}</td><td>{{ $adjunto->TipoMime ?: '—' }}</td><td>{{ $adjunto->created_at?->format('d/m/Y H:i') ?: '—' }}</td></tr>
+            @endforeach
+            </tbody>
+        </table>
+        <p>El presente PDF enumera las evidencias; los archivos originales permanecen disponibles desde la ficha del caso.</p>
+    @else
+        <p>No hay evidencias adjuntas a este caso ROS.</p>
+    @endif
 </body>
 </html>

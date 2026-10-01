@@ -6,6 +6,7 @@ use App\Models\RosAdjunto;
 use App\Models\RosCaso;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
 class RosAdjuntoController extends Controller
 {
@@ -26,9 +27,14 @@ class RosAdjuntoController extends Controller
         $ruta = Storage::disk('local')->path($adjunto->RutaArchivo);
         $nombre = $adjunto->NombreOriginal ?: basename($ruta);
 
-        return $descargar
-            ? response()->download($ruta, $nombre)
-            : response()->file($ruta, ['Content-Disposition' => "inline; filename=\"{$nombre}\""]);
+        if ($descargar) {
+            return response()->download($ruta, $nombre);
+        }
+
+        $respuesta = response()->file($ruta);
+        $respuesta->setContentDisposition(ResponseHeaderBag::DISPOSITION_INLINE, $nombre);
+
+        return $respuesta;
     }
 
     private function adjunto(int $adjuntoId): RosAdjunto

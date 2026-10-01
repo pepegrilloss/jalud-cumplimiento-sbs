@@ -17,6 +17,11 @@ class ViewRosCaso extends ViewRecord
     {
         return [
             Actions\EditAction::make()->visible(fn (): bool => RosCasoResource::canEdit($this->record)),
+            Actions\Action::make('pdf')
+                ->label('Vista previa PDF')
+                ->icon('heroicon-o-document-text')
+                ->url(fn (): string => route('ros.reporte.pdf', $this->record))
+                ->openUrlInNewTab(),
             ...$this->rosWorkflowActions(),
         ];
     }

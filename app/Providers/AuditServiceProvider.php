@@ -9,7 +9,9 @@ use App\Models\RosPersona;
 use App\Models\RosSenalAlerta;
 use App\Models\RosTipologia;
 use App\Models\RosReportePrevio;
+use App\Models\RopAdjunto;
 use App\Observers\RosAuditObserver;
+use App\Observers\RopAdjuntoObserver;
 use App\Observers\DeclaracionAuditObserver;
 use App\Models\DeclaracionTrabajador;
 use App\Models\DeclaracionCliente;
@@ -35,6 +37,8 @@ class AuditServiceProvider extends ServiceProvider
         foreach ([RosCaso::class, RosPersona::class, RosOperacion::class, RosSenalAlerta::class, RosTipologia::class, RosAdjunto::class, RosReportePrevio::class] as $model) {
             $model::observe(RosAuditObserver::class);
         }
+
+        RopAdjunto::observe(RopAdjuntoObserver::class);
 
         foreach ([DeclaracionTrabajador::class, DeclaracionCliente::class, DeclaracionDocumento::class, Estudio::class,
             EducacionEscolar::class, OtroEstudio::class, ExperienciaLaboral::class, Capacitacion::class,

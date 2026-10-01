@@ -16,9 +16,14 @@ class RosReporteController extends Controller
         $this->authorize('view', $caso);
         $caso->load(['sede', 'zona', 'cliente', 'personas.reportesPrevios', 'operaciones', 'senalesAlerta', 'tipologias', 'adjuntos', 'reportesPrevios', 'transiciones.usuario']);
 
-        return Pdf::loadView('pdf.ros.reporte', compact('caso'))
+        $contenido = Pdf::loadView('pdf.ros.reporte', compact('caso'))
             ->setPaper('a4')
-            ->download("{$caso->CodigoInterno}.pdf");
+            ->output();
+
+        return response($contenido, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$caso->CodigoInterno.'.pdf"',
+        ]);
     }
 
     public function excel(int $caso, RosExcelExportService $servicio): BinaryFileResponse

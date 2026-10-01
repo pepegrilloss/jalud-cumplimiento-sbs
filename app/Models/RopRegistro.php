@@ -91,4 +91,9 @@ class RopRegistro extends Model
     {
         return $this->hasMany(RopAuditoria::class, 'RopRegistroID', 'RopRegistroID')->latest('created_at');
     }
+
+    public function adjuntos(): HasMany
+    {
+        return $this->hasMany(RopAdjunto::class, 'RopRegistroID', 'RopRegistroID')->latest('created_at');
+    }
 }

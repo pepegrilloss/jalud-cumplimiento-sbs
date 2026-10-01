@@ -55,6 +55,9 @@ class ViewRopRegistro extends ViewRecord
             Actions\Action::make('excel')->label('Descargar Excel')->icon('heroicon-o-table-cells')
                 ->visible(fn (): bool => app(RopCompletenessService::class)->estaCompleto($this->record))
                 ->url(fn (): string => route('rop.reporte.excel', $this->record)),
+            Actions\Action::make('pdf')->label('Vista previa PDF')->icon('heroicon-o-document-text')
+                ->url(fn (): string => route('rop.reporte.pdf', $this->record))
+                ->openUrlInNewTab(),
             Actions\Action::make('generar_ros')->label('Generar ROS')->icon('heroicon-o-shield-exclamation')->color('danger')
                 ->visible(fn (): bool => (auth()->user()?->can('generar_ros_desde_rop') ?? false)
                     && $this->record->Calificacion === RopRegistro::CALIFICACION_SOSPECHOSA
