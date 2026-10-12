@@ -3,26 +3,39 @@
 namespace Tests\Unit;
 
 use App\Models\RopRegistro;
+use App\Models\RopCatalogoItem;
 use App\Services\Rop\RopExcelExportService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
 
 class RopExcelExportServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_it_fills_the_official_template_from_the_historical_snapshot(): void
     {
+        RopCatalogoItem::query()->create([
+            'Tipo' => RopCatalogoItem::TIPO_SUJETO_OBLIGADO,
+            'Codigo' => 'EMPRESA_SISTEMA_FINANCIERO',
+            'Nombre' => 'Empresa del Sistema Financiero',
+            'Activo' => true,
+            'Orden' => 1,
+        ]);
+
         $rop = new RopRegistro([
             'NumeroRop' => 'ROP-000123',
             'FechaOperacion' => '2026-09-10 08:30:00',
             'Monto' => 5000,
             'Moneda' => 'PEN',
             'SnapshotDatos' => [
-                'configuracion' => ['EnteSupervisor' => 'SBS', 'CodigoEmpresa' => 'EMP-1', 'CodigoOficialCumplimiento' => 'OC-1', 'TipoSujetoObligado' => 'Otro'],
+                'configuracion' => ['EnteSupervisor' => 'SBS', 'CodigoEmpresa' => 'EMP-1', 'CodigoOficialCumplimiento' => 'OC-1', 'TipoSujetoObligado' => 'EMPRESA_SISTEMA_FINANCIERO'],
                 'cliente' => ['ApellidoPaterno' => 'PEREZ', 'ApellidoMaterno' => 'LOPEZ', 'Nombres' => 'JUAN', 'TipoDocumento' => 'DNI', 'NumeroDocumento' => '12345678'],
                 'operacion' => ['FormaPagoDesembolso' => ['A_PLAZOS'], 'TipoOperacionDetalle' => 'PRÉSTAMO', 'IndividualMultiple' => 'INDIVIDUAL'],
             ],
             'DatosRegulatorios' => [
+                'tipo_sujeto_obligado' => 'EMPRESA_SISTEMA_FINANCIERO',
                 'tipo_cambio' => 3.75,
                 'oportunidad_pago' => 'AL_MOMENTO_OPERACION',
                 'informacion_adicional' => 'Información validada por el oficial.',
@@ -41,6 +54,7 @@ class RopExcelExportServiceTest extends TestCase
         self::assertSame(5000.0, $sheet->getCell('C25')->getValue());
         self::assertSame('PEREZ', $sheet->getCell('A95')->getValue());
         self::assertSame('12345678', $sheet->getCell('F97')->getValue());
+        self::assertSame('Casa de préstamos', $sheet->getCell('P18')->getValue());
         self::assertSame(3.75, $sheet->getCell('P25')->getValue());
         self::assertStringContainsString('X', (string) $sheet->getCell('A66')->getValue());
         self::assertSame('Información validada por el oficial.', $sheet->getCell('C68')->getValue());

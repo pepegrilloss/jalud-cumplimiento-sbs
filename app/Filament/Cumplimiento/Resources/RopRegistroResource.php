@@ -466,16 +466,6 @@ class RopRegistroResource extends Resource
 
     private static function opcionesTipoSujeto(): array
     {
-        $opciones = RopCatalogoItem::opciones(RopCatalogoItem::TIPO_SUJETO_OBLIGADO);
-
-        foreach ($opciones as $codigo => $nombre) {
-            $normalizado = \Illuminate\Support\Str::ascii(mb_strtolower($nombre));
-
-            if (preg_match('/empresa(s)? (del|de) sistema financiero|empresa(s)? financiera(s)?/', $normalizado)) {
-                $opciones[$codigo] = 'Casa de préstamos';
-            }
-        }
-
-        return $opciones;
+        return RopCatalogoItem::opcionesTipoSujetoObligado();
     }
 }

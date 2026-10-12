@@ -3,6 +3,7 @@
 namespace App\Services\Rop;
 
 use App\Models\RopRegistro;
+use App\Models\RopCatalogoItem;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
@@ -90,7 +91,7 @@ class RopExcelExportService
         $this->valor($hoja, 'P15', $datos['organismo_supervisor'] ?? null);
         $this->texto($hoja, 'C18', $datos['codigo_sujeto_obligado'] ?? 'S/C');
         $this->texto($hoja, 'J18', $datos['codigo_oficial_cumplimiento'] ?? 'S/C');
-        $this->valor($hoja, 'P18', $this->catalogo($datos['tipo_sujeto_obligado'] ?? null));
+        $this->valor($hoja, 'P18', RopCatalogoItem::nombreTipoSujetoObligado($datos['tipo_sujeto_obligado'] ?? null));
 
         $this->valor($hoja, 'C25', (float) $registro->Monto);
         $moneda = $registro->Moneda;
