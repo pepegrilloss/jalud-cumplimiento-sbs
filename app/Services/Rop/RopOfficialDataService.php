@@ -80,7 +80,32 @@ class RopOfficialDataService
             ],
         ];
 
-        return array_replace_recursive($base, $registro->DatosRegulatorios ?? []);
+        $datos = array_replace_recursive($base, $registro->DatosRegulatorios ?? []);
+
+        // En JALUD, la operación que origina el ROP es el desembolso de un préstamo.
+        // El formato oficial lo registra en "w. Otro (especifique)". Al guardar una
+        // CheckboxList de Filament, la selección puede reemplazar el índice 0 del valor
+        // inferido y hacer desaparecer OTRO; el snapshot del origen debe conservarlo.
+        $tipoOperacionOrigen = strtoupper(trim((string) ($operacion['TipoOperacion'] ?? '')));
+        $detalleOperacionOrigen = $operacion['TipoOperacionDetalle'] ?? null;
+        $esOtroPorOrigen = $tipoOperacionOrigen === 'OTRO'
+            || (blank($tipoOperacionOrigen) && filled($detalleOperacionOrigen));
+
+        $tiposOperacion = is_array($datos['tipos_operacion'] ?? null)
+            ? $datos['tipos_operacion']
+            : [];
+
+        if ($esOtroPorOrigen && ! in_array('OTRO', $tiposOperacion, true)) {
+            $tiposOperacion[] = 'OTRO';
+        }
+
+        $datos['tipos_operacion'] = array_values(array_unique($tiposOperacion));
+
+        if (blank($datos['tipo_operacion_otro'] ?? null) && filled($detalleOperacionOrigen)) {
+            $datos['tipo_operacion_otro'] = $detalleOperacionOrigen;
+        }
+
+        return $datos;
     }
 
     private function codigoCatalogo(string $tipo, mixed $valor): mixed

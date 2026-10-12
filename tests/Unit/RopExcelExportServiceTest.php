@@ -32,10 +32,13 @@ class RopExcelExportServiceTest extends TestCase
             'SnapshotDatos' => [
                 'configuracion' => ['EnteSupervisor' => 'SBS', 'CodigoEmpresa' => 'EMP-1', 'CodigoOficialCumplimiento' => 'OC-1', 'TipoSujetoObligado' => 'EMPRESA_SISTEMA_FINANCIERO'],
                 'cliente' => ['ApellidoPaterno' => 'PEREZ', 'ApellidoMaterno' => 'LOPEZ', 'Nombres' => 'JUAN', 'TipoDocumento' => 'DNI', 'NumeroDocumento' => '12345678'],
-                'operacion' => ['FormaPagoDesembolso' => ['A_PLAZOS'], 'TipoOperacionDetalle' => 'PRÉSTAMO', 'IndividualMultiple' => 'INDIVIDUAL'],
+                'operacion' => ['TipoOperacion' => 'OTRO', 'FormaPagoDesembolso' => ['A_PLAZOS'], 'TipoOperacionDetalle' => 'PRÉSTAMO', 'IndividualMultiple' => 'INDIVIDUAL'],
             ],
             'DatosRegulatorios' => [
                 'tipo_sujeto_obligado' => 'EMPRESA_SISTEMA_FINANCIERO',
+                // Guardar otra selección no debe borrar la categoría inferida del crédito JALUD.
+                'tipos_operacion' => ['ACTO_NOTARIAL'],
+                'tipo_operacion_otro' => null,
                 'tipo_cambio' => 3.75,
                 'oportunidad_pago' => 'AL_MOMENTO_OPERACION',
                 'informacion_adicional' => 'Información validada por el oficial.',
@@ -57,6 +60,7 @@ class RopExcelExportServiceTest extends TestCase
         self::assertSame('Casa de préstamos', $sheet->getCell('P18')->getValue());
         self::assertSame(3.75, $sheet->getCell('P25')->getValue());
         self::assertStringContainsString('X', (string) $sheet->getCell('A66')->getValue());
+        self::assertStringContainsString('X', (string) $sheet->getCell('A39')->getValue());
         self::assertSame('Información validada por el oficial.', $sheet->getCell('C68')->getValue());
         self::assertSame('AVENIDA', $sheet->getCell('C101')->getValue());
         self::assertSame('321', $sheet->getCell('I101')->getValue());
