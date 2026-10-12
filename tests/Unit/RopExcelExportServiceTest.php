@@ -63,9 +63,13 @@ class RopExcelExportServiceTest extends TestCase
         self::assertStringContainsString('X', (string) $sheet->getCell('D104')->getValue());
         self::assertSame('MARIA RAMOS', $sheet->getCell('M103')->getValue());
         self::assertSame('REGISTRO DE OPERACIONES (ROP)', $sheet->getCell('A9')->getValue());
-        self::assertSame('CORRELATIVO: ROP-000123', $sheet->getCell('A10')->getValue());
-        self::assertSame(24.0, $sheet->getStyle('A10')->getFont()->getSize());
-        self::assertSame('FF5B8C00', $sheet->getStyle('A10')->getFont()->getColor()->getARGB());
+        self::assertSame('CORRELATIVO: ROP-000123', $sheet->getCell('L9')->getValue());
+        self::assertSame(12.0, $sheet->getStyle('L9')->getFont()->getSize());
+        self::assertSame('FF000000', $sheet->getStyle('L9')->getFont()->getColor()->getARGB());
+        self::assertContains('A9:K9', $sheet->getMergeCells());
+        self::assertContains('L9:Q9', $sheet->getMergeCells());
+        self::assertFalse($sheet->getRowDimension(10)->getVisible());
+        self::assertStringContainsString('w. Otro (especifique): PRÉSTAMO', (string) $sheet->getCell('M46')->getValue());
         self::assertSame('A9:Q104', $sheet->getPageSetup()->getPrintArea());
         self::assertFalse($sheet->getRowDimension(1)->getVisible());
         self::assertFalse($sheet->getRowDimension(8)->getVisible());

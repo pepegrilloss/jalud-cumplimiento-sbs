@@ -6,11 +6,11 @@ use App\Models\RopRegistro;
 use App\Models\RopCatalogoItem;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -47,22 +47,31 @@ class RopExcelExportService
         }
 
         // El archivo generado es un registro completado, no el modelo en blanco.
-        $hoja->setCellValue('A9', 'REGISTRO DE OPERACIONES (ROP)');
-        $hoja->setCellValue('A10', 'CORRELATIVO: '.$registro->NumeroRop);
-        $hoja->getStyle('A9:Q9')->getFont()->setSize(18)->setBold(true);
-        $hoja->getStyle('A9:Q9')->getAlignment()
-            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
-            ->setVertical(Alignment::VERTICAL_CENTER);
-        $hoja->getRowDimension(9)->setRowHeight(24);
+        // El título y el correlativo comparten una sola fila para evitar la banda vacía.
+        foreach ($hoja->getMergeCells() as $rango) {
+            [$inicio, $fin] = explode(':', $rango);
+            [, $filaInicio] = Coordinate::coordinateFromString($inicio);
+            [, $filaFin] = Coordinate::coordinateFromString($fin);
 
-        $estiloCorrelativo = $hoja->getStyle('A10:Q10');
-        $estiloCorrelativo->getFont()->setSize(24)->setBold(true)->getColor()->setARGB('FF5B8C00');
-        $estiloCorrelativo->getAlignment()
+            if ($filaInicio <= 9 && $filaFin >= 9) {
+                $hoja->unmergeCells($rango);
+            }
+        }
+        $hoja->mergeCells('A9:K9');
+        $hoja->mergeCells('L9:Q9');
+        $hoja->setCellValue('A9', 'REGISTRO DE OPERACIONES (ROP)');
+        $hoja->setCellValue('L9', 'CORRELATIVO: '.$registro->NumeroRop);
+        $hoja->getStyle('A9:K9')->getFont()->setSize(18)->setBold(true);
+        $hoja->getStyle('A9:K9')->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_CENTER)
             ->setVertical(Alignment::VERTICAL_CENTER);
-        $estiloCorrelativo->getFill()->setFillType(Fill::FILL_SOLID);
-        $estiloCorrelativo->getFill()->getStartColor()->setARGB('FFEAF5D7');
-        $hoja->getRowDimension(10)->setRowHeight(32);
+        $estiloCorrelativo = $hoja->getStyle('L9:Q9');
+        $estiloCorrelativo->getFont()->setSize(12)->setBold(true)->getColor()->setARGB('FF000000');
+        $estiloCorrelativo->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_RIGHT)
+            ->setVertical(Alignment::VERTICAL_CENTER);
+        $hoja->getRowDimension(9)->setRowHeight(26);
+        $hoja->getRowDimension(10)->setVisible(false);
 
         for ($fila = 106; $fila <= $ultimaFila; $fila++) {
             $hoja->getRowDimension($fila)->setVisible(false);
@@ -134,8 +143,20 @@ class RopExcelExportService
                 $hoja->setCellValue($celda, null);
             }
         }
-        if (in_array('OTRO', $tiposOperacion, true) && filled($datos['tipo_operacion_otro'] ?? null)) {
-            $this->valor($hoja, 'M46', 'X  w. Otro (especifique): '.$datos['tipo_operacion_otro']);
+        if (in_array('OTRO', $tiposOperacion, true)) {
+            $detalleOtro = $datos['tipo_operacion_otro'] ?? null;
+
+            if (blank($detalleOtro)) {
+                $detalleOtro = data_get($snapshot, 'operacion.TipoOperacionDetalle');
+            }
+
+            $valorOtro = 'X  w. Otro (especifique)';
+
+            if (filled($detalleOtro)) {
+                $valorOtro .= ': '.$detalleOtro;
+            }
+
+            $this->valor($hoja, 'M46', $valorOtro);
         }
         if (($datos['compra_venta'] ?? null) === 'COMPRA') {
             $this->prefijoX($hoja, 'I52');
