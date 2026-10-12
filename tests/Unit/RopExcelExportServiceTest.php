@@ -4,6 +4,8 @@ namespace Tests\Unit;
 
 use App\Models\RopRegistro;
 use App\Services\Rop\RopExcelExportService;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
 
 class RopExcelExportServiceTest extends TestCase
@@ -33,7 +35,7 @@ class RopExcelExportServiceTest extends TestCase
             ],
         ]);
 
-        $sheet = (new RopExcelExportService)->libro($rop)->getSheetByName('Modelo ROP');
+        $sheet = (new RopExcelExportService)->libro($rop)->getSheetByName('Registro de Operaciones');
 
         self::assertSame('ROP-000123', $sheet->getCell('C15')->getValue());
         self::assertSame(5000.0, $sheet->getCell('C25')->getValue());
@@ -46,5 +48,25 @@ class RopExcelExportServiceTest extends TestCase
         self::assertSame('321', $sheet->getCell('I101')->getValue());
         self::assertStringContainsString('X', (string) $sheet->getCell('D104')->getValue());
         self::assertSame('MARIA RAMOS', $sheet->getCell('M103')->getValue());
+        self::assertSame('REGISTRO DE OPERACIONES (ROP)', $sheet->getCell('A9')->getValue());
+        self::assertSame('CORRELATIVO: ROP-000123', $sheet->getCell('A10')->getValue());
+        self::assertSame(24.0, $sheet->getStyle('A10')->getFont()->getSize());
+        self::assertSame('FF5B8C00', $sheet->getStyle('A10')->getFont()->getColor()->getARGB());
+        self::assertSame('A1:Q104', $sheet->getPageSetup()->getPrintArea());
+        self::assertFalse($sheet->getRowDimension(106)->getVisible());
+        self::assertFalse($sheet->getRowDimension(349)->getVisible());
+        self::assertSame('TABLAS PARA EL LLENADO DEL MODELO DE FORMATO DEL REGISTRO DE OPERACIONES (ROP)', $sheet->getCell('A106')->getValue());
+
+        $rutaTemporal = tempnam(sys_get_temp_dir(), 'rop-export-');
+
+        try {
+            (new Xlsx($sheet->getParent()))->save($rutaTemporal);
+            $hojaExportada = IOFactory::load($rutaTemporal)->getSheetByName('Registro de Operaciones');
+
+            self::assertSame('A1:Q104', $hojaExportada->getPageSetup()->getPrintArea());
+            self::assertFalse($hojaExportada->getRowDimension(106)->getVisible());
+        } finally {
+            @unlink($rutaTemporal);
+        }
     }
 }

@@ -8,6 +8,8 @@ use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -23,10 +25,42 @@ class RopExcelExportService
         }
 
         $this->llenar($hoja, $registro);
+        $this->prepararSalida($hoja, $registro);
         $libro->setActiveSheetIndex($libro->getIndex($hoja));
         $hoja->setSelectedCell('A1');
+        $hoja->setTitle('Registro de Operaciones');
 
         return $libro;
+    }
+
+    private function prepararSalida(Worksheet $hoja, RopRegistro $registro): void
+    {
+        // La plantilla oficial incluye las tablas de referencia desde la fila 106.
+        // Se conservan en el archivo fuente, pero no deben aparecer en el reporte generado.
+        $ultimaFila = $hoja->getHighestDataRow();
+        $hoja->getPageSetup()->setPrintArea('A1:Q104');
+
+        // El archivo generado es un registro completado, no el modelo en blanco.
+        $hoja->setCellValue('A9', 'REGISTRO DE OPERACIONES (ROP)');
+        $hoja->setCellValue('A10', 'CORRELATIVO: '.$registro->NumeroRop);
+        $hoja->getStyle('A9:Q9')->getFont()->setSize(18)->setBold(true);
+        $hoja->getStyle('A9:Q9')->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER);
+        $hoja->getRowDimension(9)->setRowHeight(24);
+
+        $estiloCorrelativo = $hoja->getStyle('A10:Q10');
+        $estiloCorrelativo->getFont()->setSize(24)->setBold(true)->getColor()->setARGB('FF5B8C00');
+        $estiloCorrelativo->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER);
+        $estiloCorrelativo->getFill()->setFillType(Fill::FILL_SOLID);
+        $estiloCorrelativo->getFill()->getStartColor()->setARGB('FFEAF5D7');
+        $hoja->getRowDimension(10)->setRowHeight(32);
+
+        for ($fila = 106; $fila <= $ultimaFila; $fila++) {
+            $hoja->getRowDimension($fila)->setVisible(false);
+        }
     }
 
     public function generar(RopRegistro $registro): string
@@ -77,6 +111,7 @@ class RopExcelExportService
             $this->valor($hoja, 'N29', 'X  Otros: '.$datos['forma_pago_otro']);
         }
 
+        $tiposOperacion = $datos['tipos_operacion'] ?? [];
         foreach ([
             'IMPORTACION_DEFINITIVA' => 'A33', 'EXPORTACION_DEFINITIVA' => 'A35', 'OPERACIONES_ADUANERAS' => 'A37',
             'ACTO_NOTARIAL' => 'A39', 'RECEPCION_FONDOS' => 'A41', 'EXPLOTACION_MINAS' => 'A43',
@@ -87,11 +122,13 @@ class RopExcelExportService
             'REMESAS_GIROS' => 'M33', 'DONACIONES' => 'M36', 'PRODUCCION_INSUMOS_QUIMICOS' => 'M40',
             'COMERCIALIZACION_INSUMOS_QUIMICOS' => 'M43', 'OTRO' => 'M46',
         ] as $tipo => $celda) {
-            if (in_array($tipo, $datos['tipos_operacion'] ?? [], true)) {
+            if (in_array($tipo, $tiposOperacion, true)) {
                 $this->prefijoX($hoja, $celda);
+            } else {
+                $hoja->setCellValue($celda, null);
             }
         }
-        if (in_array('OTRO', $datos['tipos_operacion'] ?? [], true) && filled($datos['tipo_operacion_otro'] ?? null)) {
+        if (in_array('OTRO', $tiposOperacion, true) && filled($datos['tipo_operacion_otro'] ?? null)) {
             $this->valor($hoja, 'M46', 'X  w. Otro (especifique): '.$datos['tipo_operacion_otro']);
         }
         if (($datos['compra_venta'] ?? null) === 'COMPRA') {
