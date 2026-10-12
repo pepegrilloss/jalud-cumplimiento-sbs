@@ -38,7 +38,12 @@ class RopExcelExportService
         // La plantilla oficial incluye las tablas de referencia desde la fila 106.
         // Se conservan en el archivo fuente, pero no deben aparecer en el reporte generado.
         $ultimaFila = $hoja->getHighestDataRow();
-        $hoja->getPageSetup()->setPrintArea('A1:Q104');
+        $hoja->getPageSetup()->setPrintArea('A9:Q104');
+
+        // La plantilla reserva ocho filas vacías antes del encabezado; no son parte del registro.
+        for ($fila = 1; $fila <= 8; $fila++) {
+            $hoja->getRowDimension($fila)->setVisible(false);
+        }
 
         // El archivo generado es un registro completado, no el modelo en blanco.
         $hoja->setCellValue('A9', 'REGISTRO DE OPERACIONES (ROP)');

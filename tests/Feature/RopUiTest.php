@@ -37,6 +37,15 @@ class RopUiTest extends TestCase
         DB::connection('jalud')->table('Sede')->insert([
             'SedeID' => 1, 'Nombre' => 'Chiclayo 01', 'Codigo' => 'CH01', 'Activo' => true,
         ]);
+        Schema::connection('jalud')->create('Zona', function (Blueprint $table): void {
+            $table->increments('ZonaID');
+            $table->unsignedInteger('CiudadID')->nullable();
+            $table->string('Nombre');
+            $table->boolean('Activo')->default(true);
+            $table->dateTime('FechaCreacion')->nullable();
+            $table->dateTime('FechaModificacion')->nullable();
+            $table->unsignedInteger('SedeID')->nullable();
+        });
     }
 
     public function test_super_admin_can_render_the_automatic_rop_inbox(): void
@@ -62,6 +71,7 @@ class RopUiTest extends TestCase
             ->assertSee('Registro de Operaciones (ROP)')
             ->assertSee('Cargar créditos por fecha')
             ->assertSee('Completar ROP')
+            ->assertDontSee('Más acciones')
             ->assertDontSee('Revisar/Calificar');
 
         $this->get("/cumplimiento/rop-registros/{$rop->getKey()}")
@@ -86,6 +96,7 @@ class RopUiTest extends TestCase
         $this->get('/cumplimiento/rop-registros')
             ->assertOk()
             ->assertSee('Editar ROP')
+            ->assertSee('Más acciones')
             ->assertSee('Revisar/Calificar')
             ->assertSee('Excel');
 

@@ -52,7 +52,10 @@ class RopExcelExportServiceTest extends TestCase
         self::assertSame('CORRELATIVO: ROP-000123', $sheet->getCell('A10')->getValue());
         self::assertSame(24.0, $sheet->getStyle('A10')->getFont()->getSize());
         self::assertSame('FF5B8C00', $sheet->getStyle('A10')->getFont()->getColor()->getARGB());
-        self::assertSame('A1:Q104', $sheet->getPageSetup()->getPrintArea());
+        self::assertSame('A9:Q104', $sheet->getPageSetup()->getPrintArea());
+        self::assertFalse($sheet->getRowDimension(1)->getVisible());
+        self::assertFalse($sheet->getRowDimension(8)->getVisible());
+        self::assertTrue($sheet->getRowDimension(9)->getVisible());
         self::assertFalse($sheet->getRowDimension(106)->getVisible());
         self::assertFalse($sheet->getRowDimension(349)->getVisible());
         self::assertSame('TABLAS PARA EL LLENADO DEL MODELO DE FORMATO DEL REGISTRO DE OPERACIONES (ROP)', $sheet->getCell('A106')->getValue());
@@ -63,7 +66,9 @@ class RopExcelExportServiceTest extends TestCase
             (new Xlsx($sheet->getParent()))->save($rutaTemporal);
             $hojaExportada = IOFactory::load($rutaTemporal)->getSheetByName('Registro de Operaciones');
 
-            self::assertSame('A1:Q104', $hojaExportada->getPageSetup()->getPrintArea());
+            self::assertSame('A9:Q104', $hojaExportada->getPageSetup()->getPrintArea());
+            self::assertFalse($hojaExportada->getRowDimension(1)->getVisible());
+            self::assertFalse($hojaExportada->getRowDimension(8)->getVisible());
             self::assertFalse($hojaExportada->getRowDimension(106)->getVisible());
         } finally {
             @unlink($rutaTemporal);

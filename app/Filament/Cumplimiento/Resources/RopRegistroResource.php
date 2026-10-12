@@ -349,23 +349,30 @@ class RopRegistroResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()->label('Ver detalle'),
-                Tables\Actions\EditAction::make()
-                    ->label(fn (RopRegistro $record): string => app(RopCompletenessService::class)->estaCompleto($record)
-                        ? 'Editar ROP'
-                        : 'Completar ROP')
-                    ->icon(fn (RopRegistro $record): string => app(RopCompletenessService::class)->estaCompleto($record)
-                        ? 'heroicon-o-pencil-square'
-                        : 'heroicon-o-document-plus')
-                    ->visible(fn (RopRegistro $record): bool => (auth()->user()?->can('completar_rop') ?? false) && $record->periodo?->Estado !== 'CERRADO'),
-                self::revisarCalificarAction(),
+                Tables\Actions\EditAction::make('completar_rop')
+                    ->label('Completar ROP')
+                    ->icon('heroicon-o-document-plus')
+                    ->visible(fn (RopRegistro $record): bool => (auth()->user()?->can('completar_rop') ?? false)
+                        && $record->periodo?->Estado !== 'CERRADO'
+                        && ! app(RopCompletenessService::class)->estaCompleto($record)),
+                self::revisarCalificarAction(false),
                 self::generarRosAction(),
-                Tables\Actions\Action::make('pdf')->label('PDF')->icon('heroicon-o-document-text')
-                    ->visible(fn (RopRegistro $record): bool => app(RopCompletenessService::class)->estaCompleto($record))
-                    ->url(fn (RopRegistro $record): string => route('rop.reporte.pdf', $record))
-                    ->openUrlInNewTab(),
-                Tables\Actions\Action::make('excel')->label('Excel')->icon('heroicon-o-table-cells')
-                    ->visible(fn (RopRegistro $record): bool => app(RopCompletenessService::class)->estaCompleto($record))
-                    ->url(fn (RopRegistro $record): string => route('rop.reporte.excel', $record)),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make('editar_rop')
+                        ->label('Editar ROP')
+                        ->icon('heroicon-o-pencil-square')
+                        ->visible(fn (RopRegistro $record): bool => (auth()->user()?->can('completar_rop') ?? false)
+                            && $record->periodo?->Estado !== 'CERRADO'
+                            && app(RopCompletenessService::class)->estaCompleto($record)),
+                    self::revisarCalificarAction(true, 'editar_calificacion'),
+                    Tables\Actions\Action::make('pdf')->label('Descargar PDF')->icon('heroicon-o-document-text')
+                        ->visible(fn (RopRegistro $record): bool => app(RopCompletenessService::class)->estaCompleto($record))
+                        ->url(fn (RopRegistro $record): string => route('rop.reporte.pdf', $record))
+                        ->openUrlInNewTab(),
+                    Tables\Actions\Action::make('excel')->label('Descargar Excel')->icon('heroicon-o-table-cells')
+                        ->visible(fn (RopRegistro $record): bool => app(RopCompletenessService::class)->estaCompleto($record))
+                        ->url(fn (RopRegistro $record): string => route('rop.reporte.excel', $record)),
+                ])->label('Más acciones')->icon('heroicon-m-ellipsis-horizontal')->button()->color('gray'),
             ])->bulkActions([]);
     }
 
@@ -383,9 +390,9 @@ class RopRegistroResource extends Resource
             });
     }
 
-    public static function revisarCalificarAction(): Tables\Actions\Action
+    public static function revisarCalificarAction(?bool $soloCalificados = null, string $nombre = 'revisar_calificar'): Tables\Actions\Action
     {
-        return Tables\Actions\Action::make('revisar_calificar')
+        return Tables\Actions\Action::make($nombre)
             ->label(fn (RopRegistro $record): string => filled($record->CalificadoEn)
                 ? 'Editar calificación'
                 : 'Revisar/Calificar')
@@ -394,7 +401,8 @@ class RopRegistroResource extends Resource
                 : 'heroicon-o-clipboard-document-check')
             ->visible(fn (RopRegistro $record): bool => (auth()->user()?->can('calificar_rop') ?? false)
                 && app(RopCompletenessService::class)->estaCompleto($record)
-                && $record->periodo?->Estado !== 'CERRADO')
+                && $record->periodo?->Estado !== 'CERRADO'
+                && ($soloCalificados === null || filled($record->CalificadoEn) === $soloCalificados))
             ->form(fn (RopRegistro $record): array => self::calificacionForm($record))
             ->fillForm(fn (RopRegistro $record): array => [
                 'ResultadoRevision' => $record->Calificacion ?? 'SIN_CLASIFICACION',
